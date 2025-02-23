@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,23 +29,20 @@
  *
  * Description:
  * Translation vector.
- *
- * Authors:
- * Eric Marchand
- * Fabien Spindler
- *
- *****************************************************************************/
-
-#include <stdio.h>
-#include <string.h>
-
-#include <visp3/core/vpTranslationVector.h>
+ */
 
 /*!
   \file vpTranslationVector.cpp
   \brief Class that consider the case of a translation vector.
 */
 
+#include <stdio.h>
+#include <string.h>
+
+#include <visp3/core/vpTranslationVector.h>
+
+BEGIN_VISP_NAMESPACE
+const unsigned int vpTranslationVector::constr_val_3 = 3;
 /*!
   Construct a translation vector \f$ \bf t \f$ from 3 doubles.
 
@@ -54,11 +50,14 @@
   in meters.
 
 */
-vpTranslationVector::vpTranslationVector(double tx, double ty, double tz) : vpArray2D<double>(3, 1), m_index(0)
+vpTranslationVector::vpTranslationVector(double tx, double ty, double tz) : vpArray2D<double>(constr_val_3, 1), m_index(0)
 {
-  (*this)[0] = tx;
-  (*this)[1] = ty;
-  (*this)[2] = tz;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  (*this)[index_0] = tx;
+  (*this)[index_1] = ty;
+  (*this)[index_2] = tz;
 }
 
 /*!
@@ -68,7 +67,7 @@ vpTranslationVector::vpTranslationVector(double tx, double ty, double tz) : vpAr
   \param M : Homogeneous matrix where translations are in meters.
 
 */
-vpTranslationVector::vpTranslationVector(const vpHomogeneousMatrix &M) : vpArray2D<double>(3, 1), m_index(0)
+vpTranslationVector::vpTranslationVector(const vpHomogeneousMatrix &M) : vpArray2D<double>(constr_val_3, 1), m_index(0)
 {
   M.extract(*this);
 }
@@ -80,11 +79,14 @@ vpTranslationVector::vpTranslationVector(const vpHomogeneousMatrix &M) : vpArray
   \param p : Pose vector where translations are in meters.
 
 */
-vpTranslationVector::vpTranslationVector(const vpPoseVector &p) : vpArray2D<double>(3, 1), m_index(0)
+vpTranslationVector::vpTranslationVector(const vpPoseVector &p) : vpArray2D<double>(constr_val_3, 1), m_index(0)
 {
-  (*this)[0] = p[0];
-  (*this)[1] = p[1];
-  (*this)[2] = p[2];
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  (*this)[index_0] = p[index_0];
+  (*this)[index_1] = p[index_1];
+  (*this)[index_2] = p[index_2];
 }
 
 /*!
@@ -97,7 +99,7 @@ vpTranslationVector::vpTranslationVector(const vpPoseVector &p) : vpArray2D<doub
   vpTranslationVector t2(t1);    // t2 is now a copy of t1
   \endcode
 */
-vpTranslationVector::vpTranslationVector(const vpTranslationVector &tv) : vpArray2D<double>(tv), m_index(0) {}
+vpTranslationVector::vpTranslationVector(const vpTranslationVector &tv) : vpArray2D<double>(tv), m_index(0) { }
 
 /*!
   Construct a translation vector \f$ \bf t \f$ from a 3-dimension column
@@ -115,7 +117,8 @@ vpTranslationVector::vpTranslationVector(const vpTranslationVector &tv) : vpArra
 */
 vpTranslationVector::vpTranslationVector(const vpColVector &v) : vpArray2D<double>(v), m_index(0)
 {
-  if (v.size() != 3) {
+  const unsigned int val_3 = 3;
+  if (v.size() != val_3) {
     throw(vpException(vpException::dimensionError,
                       "Cannot construct a translation vector from a "
                       "%d-dimension column vector",
@@ -134,7 +137,7 @@ vpTranslationVector::vpTranslationVector(const vpColVector &v) : vpArray2D<doubl
   \return The build translation vector.
 
 */
-vpTranslationVector vpTranslationVector::buildFrom(const vpHomogeneousMatrix &M)
+vpTranslationVector &vpTranslationVector::buildFrom(const vpHomogeneousMatrix &M)
 {
   M.extract(*this);
   return *this;
@@ -149,11 +152,14 @@ vpTranslationVector vpTranslationVector::buildFrom(const vpHomogeneousMatrix &M)
   \return The build translation vector.
 
 */
-vpTranslationVector vpTranslationVector::buildFrom(const vpPoseVector &p)
+vpTranslationVector &vpTranslationVector::buildFrom(const vpPoseVector &p)
 {
-  (*this)[0] = p[0];
-  (*this)[1] = p[1];
-  (*this)[2] = p[2];
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  (*this)[index_0] = p[index_0];
+  (*this)[index_1] = p[index_1];
+  (*this)[index_2] = p[index_2];
   return *this;
 }
 
@@ -166,16 +172,20 @@ vpTranslationVector vpTranslationVector::buildFrom(const vpPoseVector &p)
   \return The build translation vector.
 
 */
-vpTranslationVector vpTranslationVector::buildFrom(const vpColVector &v)
+vpTranslationVector &vpTranslationVector::buildFrom(const vpColVector &v)
 {
-  if (v.size() != 3) {
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int v_size = 3;
+  if (v.size() != v_size) {
     throw(vpException(vpException::dimensionError,
                       "Cannot build a translation vector from a %d-dimension column vector", v.size()));
   }
 
-  (*this)[0] = v[0];
-  (*this)[1] = v[1];
-  (*this)[2] = v[2];
+  (*this)[index_0] = v[index_0];
+  (*this)[index_1] = v[index_1];
+  (*this)[index_2] = v[index_2];
   return *this;
 }
 
@@ -187,7 +197,7 @@ vpTranslationVector vpTranslationVector::buildFrom(const vpColVector &v)
   \return The build translation vector.
   \sa set()
 */
-vpTranslationVector vpTranslationVector::buildFrom(double tx, double ty, double tz)
+vpTranslationVector &vpTranslationVector::buildFrom(const double &tx, const double &ty, const double &tz)
 {
   set(tx, ty, tz);
   return *this;
@@ -201,9 +211,12 @@ vpTranslationVector vpTranslationVector::buildFrom(double tx, double ty, double 
 */
 void vpTranslationVector::set(double tx, double ty, double tz)
 {
-  (*this)[0] = tx;
-  (*this)[1] = ty;
-  (*this)[2] = tz;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  (*this)[index_0] = tx;
+  (*this)[index_1] = ty;
+  (*this)[index_2] = tz;
 }
 
 /*!
@@ -228,8 +241,10 @@ vpTranslationVector vpTranslationVector::operator+(const vpTranslationVector &tv
 {
   vpTranslationVector s;
 
-  for (unsigned int i = 0; i < 3; i++)
+  const unsigned int val_3 = 3;
+  for (unsigned int i = 0; i < val_3; ++i) {
     s[i] = (*this)[i] + tv[i];
+  }
 
   return s;
 }
@@ -240,7 +255,7 @@ vpTranslationVector vpTranslationVector::operator+(const vpTranslationVector &tv
 
   \return The sum of the current translation vector (*this) and the column
   vector to add.
-\code
+  \code
   vpTranslationVector t1(1,2,3);
   vpColVector v(3);
   v[0] = 4;
@@ -256,14 +271,16 @@ vpTranslationVector vpTranslationVector::operator+(const vpTranslationVector &tv
 */
 vpTranslationVector vpTranslationVector::operator+(const vpColVector &v) const
 {
-  if (v.size() != 3) {
+  const unsigned int val_3 = 3;
+  if (v.size() != val_3) {
     throw(vpException(vpException::dimensionError, "Cannot add translation vector to a %d-dimension column vector",
                       v.size()));
   }
   vpTranslationVector s;
 
-  for (unsigned int i = 0; i < 3; i++)
+  for (unsigned int i = 0; i < val_3; ++i) {
     s[i] = (*this)[i] + v[i];
+  }
 
   return s;
 }
@@ -290,8 +307,10 @@ vpTranslationVector vpTranslationVector::operator-(const vpTranslationVector &tv
 {
   vpTranslationVector sub;
 
-  for (unsigned int i = 0; i < 3; i++)
+  const unsigned int val_3 = 3;
+  for (unsigned int i = 0; i < val_3; ++i) {
     sub[i] = (*this)[i] - tv[i];
+  }
 
   return sub;
 }
@@ -313,7 +332,7 @@ vpTranslationVector vpTranslationVector::operator-(const vpTranslationVector &tv
 vpTranslationVector vpTranslationVector::operator-() const // negate
 {
   vpTranslationVector tv;
-  for (unsigned int i = 0; i < dsize; i++) {
+  for (unsigned int i = 0; i < dsize; ++i) {
     *(tv.data + i) = -*(data + i);
   }
 
@@ -339,7 +358,7 @@ vpTranslationVector vpTranslationVector::operator-() const // negate
 vpTranslationVector vpTranslationVector::operator*(double x) const
 {
   vpTranslationVector tv;
-  for (unsigned int i = 0; i < dsize; i++) {
+  for (unsigned int i = 0; i < dsize; ++i) {
     *(tv.data + i) = (*(data + i)) * x;
   }
 
@@ -358,8 +377,9 @@ vpTranslationVector vpTranslationVector::operator*(double x) const
 vpMatrix vpTranslationVector::operator*(const vpRowVector &v) const
 {
   vpMatrix M(rowNum, v.getCols());
-  for (unsigned int i = 0; i < rowNum; i++) {
-    for (unsigned int j = 0; j < v.getCols(); j++) {
+  unsigned int v_col = v.getCols();
+  for (unsigned int i = 0; i < rowNum; ++i) {
+    for (unsigned int j = 0; j < v_col; ++j) {
       M[i][j] = (*this)[i] * v[j];
     }
   }
@@ -376,9 +396,10 @@ vpMatrix vpTranslationVector::operator*(const vpRowVector &v) const
 */
 vpTranslationVector &vpTranslationVector::operator*=(double x)
 {
-  for (unsigned int i = 0; i < rowNum; i++)
+  for (unsigned int i = 0; i < rowNum; ++i) {
     (*this)[i] *= x;
-  return (*this);
+  }
+  return *this;
 }
 /*!
   Operator that allows to divide each element of a translation vector by a
@@ -390,9 +411,10 @@ vpTranslationVector &vpTranslationVector::operator*=(double x)
 */
 vpTranslationVector &vpTranslationVector::operator/=(double x)
 {
-  for (unsigned int i = 0; i < rowNum; i++)
+  for (unsigned int i = 0; i < rowNum; ++i) {
     (*this)[i] /= x;
-  return (*this);
+  }
+  return *this;
 }
 
 /*!
@@ -414,7 +436,7 @@ vpTranslationVector &vpTranslationVector::operator/=(double x)
 vpTranslationVector vpTranslationVector::operator/(double x) const
 {
   vpTranslationVector tv;
-  for (unsigned int i = 0; i < dsize; i++) {
+  for (unsigned int i = 0; i < dsize; ++i) {
     *(tv.data + i) = (*(data + i)) / x;
   }
 
@@ -439,7 +461,8 @@ vpTranslationVector vpTranslationVector::operator/(double x) const
 */
 vpTranslationVector &vpTranslationVector::operator=(const vpColVector &tv)
 {
-  if (tv.size() != 3) {
+  const unsigned int val_3 = 3;
+  if (tv.size() != val_3) {
     throw(vpException(vpException::dimensionError,
                       "Cannot initialize a translation vector from a "
                       "%d-dimension col vector",
@@ -449,7 +472,8 @@ vpTranslationVector &vpTranslationVector::operator=(const vpColVector &tv)
   if (rowNum != k) {
     try {
       resize(k, 1);
-    } catch (...) {
+    }
+    catch (...) {
       throw;
     }
   }
@@ -477,7 +501,8 @@ vpTranslationVector &vpTranslationVector::operator=(const vpTranslationVector &t
   if (rowNum != k) {
     try {
       resize(k, 1);
-    } catch (...) {
+    }
+    catch (...) {
       throw;
     }
   }
@@ -502,8 +527,10 @@ vpTranslationVector &vpTranslationVector::operator=(double x)
 {
   double *d = data;
 
-  for (int i = 0; i < 3; i++)
+  const int val_3 = 3;
+  for (int i = 0; i < val_3; ++i) {
     *(d++) = x;
+  }
 
   return *this;
 }
@@ -512,17 +539,21 @@ vpTranslationVector &vpTranslationVector::operator=(double x)
 /*!
   Set vector from a list of 3 double values in meters.
   \code
-#include <visp3/core/vpTranslationVector.cpp>
+  #include <visp3/core/vpTranslationVector.cpp>
 
-int main()
-{
-  vpTranslationVector t = {0, 0.1, 0.5};
-  std::cout << "t: " << t.t() << std::endl;
-}
+  #ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+  #endif
+
+  int main()
+  {
+    vpTranslationVector t = {0, 0.1, 0.5};
+    std::cout << "t: " << t.t() << std::endl;
+  }
   \endcode
   It produces the following printings:
   \code
-t: 0  0.1  0.5
+  t: 0  0.1  0.5
   \endcode
   \sa operator<<()
 */
@@ -530,9 +561,9 @@ vpTranslationVector &vpTranslationVector::operator=(const std::initializer_list<
 {
   if (list.size() > size()) {
     throw(vpException(
-        vpException::dimensionError,
-        "Cannot set translation vector out of bounds. It has only %d values while you try to initialize with %d values",
-        size(), list.size()));
+      vpException::dimensionError,
+      "Cannot set translation vector out of bounds. It has only %d values while you try to initialize with %d values",
+      size(), list.size()));
   }
   std::copy(list.begin(), list.end(), data);
   return *this;
@@ -546,18 +577,22 @@ vpTranslationVector &vpTranslationVector::operator=(const std::initializer_list<
 
   The following example shows how to initialize a translation vector from a list of 3 values [meter].
   \code
-#include <visp3/core/vpTranslationVector.h>
+  #include <visp3/core/vpTranslationVector.h>
 
-int main()
-{
-  vpTranslationVector t;
-  t << 0, 0.1, 0.5;
-  std::cout << "t: " << t.t() << std::endl;
-}
+  #ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+  #endif
+
+  int main()
+  {
+    vpTranslationVector t;
+    t << 0, 0.1, 0.5;
+    std::cout << "t: " << t.t() << std::endl;
+  }
   \endcode
   It produces the following printings:
   \code
-t: 0  0.1  0.5
+  t: 0  0.1  0.5
   \endcode
 
   \sa operator,()
@@ -576,30 +611,34 @@ vpTranslationVector &vpTranslationVector::operator<<(double val)
 
   The following example shows how to initialize a translations vector from a list of 3 values [meter].
   \code
-#include <visp3/core/vpTranslationVector.h>
+  #include <visp3/core/vpTranslationVector.h>
 
-int main()
-{
-  vpTranslationVector t;
-  t << 0, 0.1, 0.5;
-  std::cout << "t: " << t.t() << std::endl;
-}
+  #ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+  #endif
+
+  int main()
+  {
+    vpTranslationVector t;
+    t << 0, 0.1, 0.5;
+    std::cout << "t: " << t.t() << std::endl;
+  }
   \endcode
   It produces the following printings:
   \code
-t: 0  0.1  0.5
+  t: 0  0.1  0.5
   \endcode
 
   \sa operator<<()
  */
 vpTranslationVector &vpTranslationVector::operator,(double val)
 {
-  m_index++;
+  ++m_index;
   if (m_index >= size()) {
     throw(vpException(
-        vpException::dimensionError,
-        "Cannot set translation vector out of bounds. It has only %d values while you try to initialize with %d values",
-        size(), m_index + 1));
+      vpException::dimensionError,
+      "Cannot set translation vector out of bounds. It has only %d values while you try to initialize with %d values",
+      size(), m_index + 1));
   }
   data[m_index] = val;
   return *this;
@@ -624,16 +663,20 @@ vpTranslationVector &vpTranslationVector::operator,(double val)
 */
 void vpTranslationVector::skew(const vpTranslationVector &tv, vpMatrix &M)
 {
-  M.resize(3, 3);
-  M[0][0] = 0;
-  M[0][1] = -tv[2];
-  M[0][2] = tv[1];
-  M[1][0] = tv[2];
-  M[1][1] = 0;
-  M[1][2] = -tv[0];
-  M[2][0] = -tv[1];
-  M[2][1] = tv[0];
-  M[2][2] = 0;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int val_3 = 3;
+  M.resize(val_3, val_3);
+  M[index_0][index_0] = 0;
+  M[index_0][index_1] = -tv[index_2];
+  M[index_0][index_2] = tv[index_1];
+  M[index_1][index_0] = tv[index_2];
+  M[index_1][index_1] = 0;
+  M[index_1][index_2] = -tv[index_0];
+  M[index_2][index_0] = -tv[index_1];
+  M[index_2][index_1] = tv[index_0];
+  M[index_2][index_2] = 0;
 }
 
 /*!
@@ -698,7 +741,7 @@ vpMatrix vpTranslationVector::skew() const
 vpTranslationVector vpTranslationVector::cross(const vpTranslationVector &a, const vpTranslationVector &b)
 {
   vpMatrix skew_a = vpTranslationVector::skew(a);
-  return (vpTranslationVector)(skew_a * b);
+  return static_cast<vpTranslationVector>(skew_a * b);
 }
 
 /*!
@@ -711,10 +754,12 @@ vpRowVector vpTranslationVector::t() const
   return v;
 }
 
+#if defined(VISP_BUILD_DEPRECATED_FUNCTIONS)
+
 /*!
   \deprecated This function is deprecated. You should rather use frobeniusNorm().
 
-  Compute and return the Euclidean norm also called Fronebius nom of the translation vector
+  Compute and return the Euclidean norm also called Frobenius nom of the translation vector
   \f$ ||t|| = \sqrt{ \sum{t_{i}^2}} \f$.
 
   \return The Euclidean norm if the vector is initialized, 0 otherwise.
@@ -723,10 +768,12 @@ vpRowVector vpTranslationVector::t() const
 */
 double vpTranslationVector::euclideanNorm() const { return frobeniusNorm(); }
 
-/*!
-  Compute and return the Fronebius norm \f$ ||t|| = \sqrt{ \sum{t_{i}^2}} \f$.
+#endif
 
-  \return The Fronebius norm if the vector is initialized, 0 otherwise.
+/*!
+  Compute and return the Frobenius norm \f$ ||t|| = \sqrt{ \sum{t_{i}^2}} \f$.
+
+  \return The Frobenius norm if the vector is initialized, 0 otherwise.
 */
 double vpTranslationVector::frobeniusNorm() const
 {
@@ -740,12 +787,12 @@ double vpTranslationVector::frobeniusNorm() const
   vector t(m).
 
   \return The value \f[\sum{i=0}^{m} t_i^{2}\f].
-  */
+*/
 double vpTranslationVector::sumSquare() const
 {
   double sum_square = 0.0;
 
-  for (unsigned int i = 0; i < rowNum; i++) {
+  for (unsigned int i = 0; i < rowNum; ++i) {
     double x = rowPtrs[i][0];
     sum_square += x * x;
   }
@@ -757,15 +804,16 @@ double vpTranslationVector::sumSquare() const
   Compute the Euclidean mean of the translation vector extracted from a vector of homogeneous matrices.
 
   \param[in] vec_M : Set of homogeneous matrices.
-  \return The Euclidian mean of the translation vectors.
+  \return The Euclidean mean of the translation vectors.
 
   \sa vpRotationMatrix::mean()
  */
 vpTranslationVector vpTranslationVector::mean(const std::vector<vpHomogeneousMatrix> &vec_M)
 {
   vpColVector meanT(3);
-  for (size_t i = 0; i < vec_M.size(); i++) {
-    meanT += (vpColVector)vec_M[i].getTranslationVector();
+  size_t vec_m_size = vec_M.size();
+  for (size_t i = 0; i < vec_m_size; ++i) {
+    meanT += static_cast<vpColVector>(vec_M[i].getTranslationVector());
   }
   meanT /= static_cast<double>(vec_M.size());
 
@@ -777,18 +825,20 @@ vpTranslationVector vpTranslationVector::mean(const std::vector<vpHomogeneousMat
   Compute the Euclidean mean of a vector of translation vector.
 
   \param[in] vec_t : Set of translation vectors.
-  \return The Euclidian mean of the translation vectors.
+  \return The Euclidean mean of the translation vectors.
 
   \sa vpRotationMatrix::mean()
  */
 vpTranslationVector vpTranslationVector::mean(const std::vector<vpTranslationVector> &vec_t)
 {
   vpColVector meanT(3);
-  for (size_t i = 0; i < vec_t.size(); i++) {
-    meanT += (vpColVector)vec_t[i];
+  size_t l_vec_t_size = vec_t.size();
+  for (size_t i = 0; i < l_vec_t_size; ++i) {
+    meanT += static_cast<vpColVector>(vec_t[i]);
   }
   meanT /= static_cast<double>(vec_t.size());
 
   vpTranslationVector t(meanT);
   return t;
 }
+END_VISP_NAMESPACE

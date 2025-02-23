@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,31 +31,25 @@
  * Description:
  * Template tracker.
  *
- * Authors:
- * Amaury Dame
- * Aurelien Yol
- * Fabien Spindler
- *
- *****************************************************************************/
-
-#include <limits> // numeric_limits
+*****************************************************************************/
 
 #include <visp3/core/vpConfig.h>
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x020300
+#if defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC)
 #include <opencv2/imgproc/imgproc.hpp>
 #endif
 
 #include <visp3/tt/vpTemplateTrackerZone.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
    Default constructor.
  */
-vpTemplateTrackerZone::vpTemplateTrackerZone() : Zone(), min_x(-1), min_y(-1), max_x(-1), max_y(-1) {}
+  vpTemplateTrackerZone::vpTemplateTrackerZone() : Zone(), min_x(-1), min_y(-1), max_x(-1), max_y(-1) { }
 
-/*!
-   Copy constructor.
- */
+  /*!
+     Copy constructor.
+   */
 vpTemplateTrackerZone::vpTemplateTrackerZone(const vpTemplateTrackerZone &z)
   : Zone(), min_x(-1), min_y(-1), max_x(-1), max_y(-1)
 {
@@ -128,7 +122,8 @@ void vpTemplateTrackerZone::initClick(const vpImage<unsigned char> &I, bool dela
         if (delaunay) {
           // Draw a line between the 2 last points
           vpDisplay::displayLine(I, p, vip[vip.size() - 2], vpColor::blue, 3);
-        } else {
+        }
+        else {
           if (vip.size() % 3 == 2)
             // draw line between point 2-1
             vpDisplay::displayLine(I, p, vip[vip.size() - 2], vpColor::blue, 3);
@@ -171,7 +166,8 @@ void vpTemplateTrackerZone::initFromPoints(const vpImage<unsigned char> &I, cons
   if (delaunay) {
     if (vip.size() == 3) {
       initFromPoints(I, vip, false);
-    } else if (vip.size() == 4) {
+    }
+    else if (vip.size() == 4) {
       std::vector<vpImagePoint> vip_delaunay;
       vip_delaunay.push_back(vip[0]);
       vip_delaunay.push_back(vip[1]);
@@ -180,8 +176,9 @@ void vpTemplateTrackerZone::initFromPoints(const vpImage<unsigned char> &I, cons
       vip_delaunay.push_back(vip[3]);
       vip_delaunay.push_back(vip[0]);
       initFromPoints(I, vip_delaunay, false);
-    } else {
-#if VISP_HAVE_OPENCV_VERSION >= 0x020300
+    }
+    else {
+#if defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC)
       // Init Delaunay
       cv::Subdiv2D subdiv(cv::Rect(0, 0, (int)I.getWidth(), (int)I.getHeight()));
       for (size_t i = 0; i < vip.size(); i++) {
@@ -218,7 +215,8 @@ void vpTemplateTrackerZone::initFromPoints(const vpImage<unsigned char> &I, cons
       throw vpException(vpException::functionNotImplementedError, "Delaunay triangulation is not available!");
 #endif
     }
-  } else {
+  }
+  else {
     Zone.clear();
     for (unsigned int i = 0; i < vip.size(); i += 3) {
       vpTemplateTrackerTriangle triangle(vip[i], vip[i + 1], vip[i + 2]);
@@ -582,3 +580,4 @@ double vpTemplateTrackerZone::getArea() const
   }
   return area;
 }
+END_VISP_NAMESPACE

@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2025 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,40 +29,57 @@
  *
  * Description:
  * Ogre example.
- *
- * Authors:
- * Bertrand Delabarre
- *
- *****************************************************************************/
+ */
+
 /*!
   \example HelloWorldOgre.cpp
 
   \brief Example that shows how to exploit the vpAROgre class.
-
 */
 
 #include <iostream>
+
+#include <visp3/core/vpConfig.h>
+
+//! [Undef grabber]
+// Comment / uncomment following lines to use the specific 3rd party compatible with your camera
+// #undef VISP_HAVE_V4L2
+// #undef VISP_HAVE_DC1394
+// #undef HAVE_OPENCV_HIGHGUI
+// #undef HAVE_OPENCV_VIDEOIO
+//! [Undef grabber]
 
 #include <visp3/ar/vpAROgre.h>
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/sensor/vp1394TwoGrabber.h>
-#include <visp3/sensor/vpOpenCVGrabber.h>
 #include <visp3/sensor/vpV4l2Grabber.h>
+
+#if (VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)
+#include <opencv2/highgui/highgui.hpp> // for cv::VideoCapture
+#elif (VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO)
+#include <opencv2/videoio/videoio.hpp> // for cv::VideoCapture
+#endif
 
 int main()
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
   try {
 #if defined(VISP_HAVE_OGRE)
-#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || (VISP_HAVE_OPENCV_VERSION >= 0x020100)
+#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || \
+  ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
 
     // Image to stock gathered data
     // Here we acquire a color image. The consequence will be that
     // the background texture used in Ogre renderer will be also in color.
     vpImage<vpRGBa> I;
 
-// Now we try to find an available framegrabber
+    // Now we try to find an available framegrabber
 #if defined(VISP_HAVE_V4L2)
     // Video for linux 2 grabber
     vpV4l2Grabber grabber;
@@ -74,13 +90,13 @@ int main()
     vp1394TwoGrabber grabber;
     grabber.open(I);
     grabber.acquire(I);
-#elif defined(VISP_HAVE_OPENCV)
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI))|| ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
     // OpenCV to gather images
     cv::VideoCapture grabber(0); // open the default camera
     if (!grabber.isOpened()) {   // check if we succeeded
       std::cout << "Failed to open the camera" << std::endl;
       return EXIT_FAILURE;
-    }
+  }
     cv::Mat frame;
     grabber >> frame; // get a new frame from camera
     vpImageConvert::convert(frame, I);
@@ -109,7 +125,7 @@ int main()
 
     // Create a basic scene
     // -----------------------------------
-    //  	      Loading things
+    // Loading things
     // -----------------------------------
     //  As you will see in section 5, our
     //  application knows locations where
@@ -134,10 +150,10 @@ int main()
 
     // Rendering loop, ended with on escape
     while (ogre.continueRendering()) {
-// Acquire a new image
+      // Acquire a new image
 #if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394)
       grabber.acquire(I);
-#elif defined(VISP_HAVE_OPENCV)
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI))|| ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
       grabber >> frame;
       vpImageConvert::convert(frame, I);
 #endif
@@ -154,10 +170,12 @@ int main()
     std::cout << "You need Ogre3D to run this example" << std::endl;
 #endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+}
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
     return EXIT_FAILURE;
-  } catch (...) {
+  }
+  catch (...) {
     std::cout << "Catch an exception " << std::endl;
     return EXIT_FAILURE;
   }

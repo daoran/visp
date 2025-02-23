@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2025 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,11 +30,7 @@
  * Description:
  * Implementation of a simple augmented reality application using the vpAROgre
  * class.
- *
- * Authors:
- * Bertrand Delabarre
- *
- *****************************************************************************/
+ */
 
 /*!
   \example AROgre.cpp
@@ -45,21 +40,8 @@
 #include <iostream>
 #include <visp3/core/vpConfig.h>
 
-//#if defined(VISP_HAVE_OGRE) && (defined(VISP_HAVE_OPENCV) ||
-// defined(VISP_HAVE_GDI) || defined(VISP_HAVE_D3D9) || defined(VISP_HAVE_GTK)
-//|| (defined(VISP_HAVE_X11) && ! defined(APPLE)))
-#if defined(VISP_HAVE_OGRE) &&                                                                                         \
-    (defined(VISP_HAVE_OPENCV) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_D3D9) || defined(VISP_HAVE_GTK) ||       \
-     (defined(VISP_HAVE_X11) && !(defined(__APPLE__) && defined(__MACH__))))
+#if defined(VISP_HAVE_OGRE) && defined(VISP_HAVE_DISPLAY)
 
-//#if defined(VISP_HAVE_X11) && ! defined(APPLE)
-#if defined(VISP_HAVE_X11) && !(defined(__APPLE__) && defined(__MACH__))
-// produce an error on OSX: ‘typedef int Cursor’
-// /usr/X11R6/include/X11/X.h:108: error: ‘Cursor’ has a previous
-// declaration as ‘typedef XID Cursor’. That's why it should not be
-// used on APPLE platforms
-#include <visp3/gui/vpDisplayX.h>
-#endif
 #include <visp3/ar/vpAROgre.h>
 #include <visp3/blob/vpDot2.h>
 #include <visp3/core/vpDebug.h>
@@ -67,10 +49,7 @@
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 #include <visp3/core/vpPoint.h>
-#include <visp3/gui/vpDisplayD3D.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpParseArgv.h>
 #include <visp3/io/vpVideoReader.h>
 #include <visp3/vision/vpPose.h>
@@ -78,16 +57,17 @@
 // List of allowed command line options
 #define GETOPTARGS "ci:p:h"
 
-/*!
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
+/*!
   Print the program options.
 
   \param name : Program name.
   \param badparam : Bad parameter name.
   \param ipath : Input image path.
   \param ppath : Personal image path.
-
-
 */
 void usage(const char *name, const char *badparam, std::string ipath, std::string ppath)
 {
@@ -116,7 +96,7 @@ OPTIONS:                                               Default\n\
      variable produces the same behaviour than using\n\
      this option.\n\
  \n\
- -p <personal image path>                             %s\n\
+  -p <personal image path>                             %s\n\
      Specify a personal sequence containing images \n\
      to process.\n\
      By image sequence, we mean one file per image.\n\
@@ -124,8 +104,8 @@ OPTIONS:                                               Default\n\
      %%04d is for the image numbering.\n\
 \n\
   -c\n\
-     Disable the mouse click. Useful to automaze the \n\
-     execution of this program without humain intervention.\n\
+     Disable the mouse click. Useful to automate the \n\
+     execution of this program without human intervention.\n\
 \n\
   -h\n\
      Print the help.\n",
@@ -134,8 +114,8 @@ OPTIONS:                                               Default\n\
   if (badparam)
     fprintf(stdout, "\nERROR: Bad parameter [%s]\n", badparam);
 }
-/*!
 
+/*!
   Set the program options.
 
   \param argc : Command line number of parameters.
@@ -145,7 +125,6 @@ OPTIONS:                                               Default\n\
   \param click_allowed : Mouse click activation.
 
   \return false if the program has to be stopped, true otherwise.
-
 */
 bool getOptions(int argc, const char **argv, std::string &ipath, std::string &ppath, bool &click_allowed)
 {
@@ -164,7 +143,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &pp
       ppath = optarg_;
       break;
     case 'h':
-      usage(argv[0], NULL, ipath, ppath);
+      usage(argv[0], nullptr, ipath, ppath);
       return false;
       break;
 
@@ -177,7 +156,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &pp
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL, ipath, ppath);
+    usage(argv[0], nullptr, ipath, ppath);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -193,7 +172,7 @@ class vpAROgreExample : public vpAROgre
 public:
   // The constructor doesn't change here
   vpAROgreExample(const vpCameraParameters &cam = vpCameraParameters(), unsigned int width = 640,
-                  unsigned int height = 480, const char *resourcePath = NULL)
+                  unsigned int height = 480, const char *resourcePath = nullptr)
     : vpAROgre(cam, width, height)
   {
     // Direction vectors
@@ -201,8 +180,8 @@ public:
       mResourcePath = resourcePath;
     std::cout << "mResourcePath: " << mResourcePath << std::endl;
     vecDevant = Ogre::Vector3(0, -1, 0);
-    robot = NULL;
-    mAnimationState = NULL;
+    robot = nullptr;
+    mAnimationState = nullptr;
   }
 
 protected:
@@ -215,20 +194,29 @@ protected:
   Ogre::Entity *robot;
 
   // Our scene will just be a plane
-  void createScene()
+  void createScene() VP_OVERRIDE
   {
-    // Lumieres
+    //![Light creation]
+    // Set lights
     mSceneMgr->setAmbientLight(Ogre::ColourValue((float)0.6, (float)0.6, (float)0.6)); // Default value of lightning
     Ogre::Light *light = mSceneMgr->createLight();
     light->setDiffuseColour(1.0, 1.0, 1.0);  // scaled RGB values
     light->setSpecularColour(1.0, 1.0, 1.0); // scaled RGB values
     // Lumiere ponctuelle
+#if (VISP_HAVE_OGRE_VERSION < (1 << 16 | 10 << 8 | 0))
     light->setPosition(-5, -5, 10);
+#else
+    Ogre::SceneNode *spotLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+    spotLightNode->attachObject(light);
+    spotLightNode->setPosition(Ogre::Vector3(-5, -5, 10));
+#endif
     light->setType(Ogre::Light::LT_POINT);
     light->setAttenuation((Ogre::Real)100, (Ogre::Real)1.0, (Ogre::Real)0.045, (Ogre::Real)0.0075);
     // Ombres
     light->setCastShadows(true);
+    //![Light creation]
 
+    //![Mesh insertion]
     // Create the Entity
     robot = mSceneMgr->createEntity("Robot", "robot.mesh");
     // Attach robot to scene graph
@@ -239,7 +227,9 @@ protected:
     RobotNode->yaw(Ogre::Degree(-90));
     robot->setCastShadows(true);
     mSceneMgr->setShadowTechnique(Ogre::SHADOWTYPE_STENCIL_MODULATIVE);
+    //![Mesh insertion]
 
+    //![Animating the mesh]
     // Add an animation
     // Set the good animation
     mAnimationState = robot->getAnimationState("Idle");
@@ -247,7 +237,9 @@ protected:
     mAnimationState->setLoop(true);
     // Animation enabled
     mAnimationState->setEnabled(true);
+    //![Animating the mesh]
 
+    //![Ground insertion]
     // Add a ground
     Ogre::Plane plan;
     plan.d = 0;
@@ -258,8 +250,10 @@ protected:
     Ogre::SceneNode *PlaneNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("Entitesol");
     PlaneNode->attachObject(ent);
     ent->setMaterialName("Examples/GrassFloor");
+    //![Ground insertion]
   }
 
+  //![Updating the animation]
   bool customframeEnded(const Ogre::FrameEvent &evt)
   {
     // Update animation
@@ -267,7 +261,9 @@ protected:
     mAnimationState->addTime(evt.timeSinceLastFrame);
     return true;
   }
+  //![Updating the animation]
 
+//![Listening for keyboard events]
 #ifdef VISP_HAVE_OIS
   bool processInputEvent(const Ogre::FrameEvent & /*evt*/)
   {
@@ -309,7 +305,8 @@ protected:
     // Play the right animation
     if (event) {
       mAnimationState = robot->getAnimationState("Walk");
-    } else
+    }
+    else
       mAnimationState = robot->getAnimationState("Idle");
 
     // Start over when finished
@@ -320,6 +317,7 @@ protected:
     return true;
   }
 #endif
+//![Listening for keyboard events]
 };
 
 /*!
@@ -336,118 +334,89 @@ void computeInitialPose(vpCameraParameters *mcam, vpImage<unsigned char> &I, vpP
   // ----------------------------------------------------
   bool opt_display = true;
 
-//#if defined(VISP_HAVE_X11) && ! defined(APPLE)
-#if defined(VISP_HAVE_X11) && !(defined(__APPLE__) && defined(__MACH__))
-  // produce an error on OSX: ‘typedef int Cursor’
-  // /usr/X11R6/include/X11/X.h:108: error: ‘Cursor’ has a previous
-  // declaration as ‘typedef XID Cursor’. That's why it should not be
-  // used on APPLE platforms
-  vpDisplayX display;
-#elif defined VISP_HAVE_GTK
-  vpDisplayGTK display;
-#elif defined VISP_HAVE_GDI
-  vpDisplayGDI display;
-#elif defined VISP_HAVE_OPENCV
-  vpDisplayOpenCV display;
-#elif defined VISP_HAVE_D3D9
-  vpDisplayD3D display;
+  vpDisplay *display = nullptr;
+  if (opt_display) {
+#if defined(VISP_HAVE_DISPLAY)
+    display = vpDisplayFactory::allocateDisplay();
+#else
+    opt_display = false; // No display is available
 #endif
-  for (unsigned int i = 0; i < 4; i++) {
+  }
+
+  for (unsigned int i = 0; i < 4; ++i) {
     if (opt_display) {
       md[i].setGraphics(true);
-    } else {
+    }
+    else {
       md[i].setGraphics(false);
     }
   }
 
   if (opt_display) {
-    try {
-      // Display size is automatically defined by the image (I) size
-      display.init(I, 100, 100, "Preliminary Pose Calculation");
-      // display the image
-      // The image class has a member that specify a pointer toward
-      // the display that has been initialized in the display declaration
-      // therefore is is no longuer necessary to make a reference to the
-      // display variable.
-      vpDisplay::display(I);
-      // Flush the display
-      vpDisplay::flush(I);
-
-    } catch (...) {
-      vpERROR_TRACE("Error while displaying the image");
-      return;
-    }
+    // Display size is automatically defined by the image (I) size
+    display->init(I, 100, 100, "Preliminary Pose Calculation");
+    // display the image
+    // The image class has a member that specify a pointer toward
+    // the display that has been initialized in the display declaration
+    // therefore is is no longer necessary to make a reference to the
+    // display variable.
+    vpDisplay::display(I);
+    // Flush the display
+    vpDisplay::flush(I);
   }
 
-  std::cout << "*************************************************************"
-               "***********************"
-            << std::endl;
-  std::cout << "*************************** Preliminary Pose Calculation "
-               "***************************"
-            << std::endl;
-  std::cout << "******************************  Click on the 4 dots  "
-               "*******************************"
-            << std::endl;
-  std::cout << "********Dot1 : (-x,-y,0), Dot2 : (x,-y,0), Dot3 : (x,y,0), "
-               "Dot4 : (-x,y,0)**********"
-            << std::endl;
-  std::cout << "*************************************************************"
-               "***********************"
-            << std::endl;
+  std::cout << "**"<< std::endl;
+  std::cout << "**  Preliminary Pose Calculation" << std::endl;
+  std::cout << "**  Click on the 4 dots" << std::endl;
+  std::cout << "**  Dot1: (-x,-y,0), Dot2: (x,-y,0), Dot3: (x,y,0), Dot4: (-x,y,0)" << std::endl;
+  std::cout << "**" << std::endl;
 
-  try {
-    vpImagePoint ip[4];
-    if (!opt_click_allowed) {
-      ip[0].set_i(265);
-      ip[0].set_j(93);
-      ip[1].set_i(248);
-      ip[1].set_j(242);
-      ip[2].set_i(166);
-      ip[2].set_j(215);
-      ip[3].set_i(178);
-      ip[3].set_j(85);
+  vpImagePoint ip[4];
+  if (!opt_click_allowed) {
+    ip[0].set_i(265);
+    ip[0].set_j(93);
+    ip[1].set_i(248);
+    ip[1].set_j(242);
+    ip[2].set_i(166);
+    ip[2].set_j(215);
+    ip[3].set_i(178);
+    ip[3].set_j(85);
+  }
+  for (unsigned int i = 0; i < 4; ++i) {
+    // by using setGraphics, we request to see the edges of the dot
+    // in red on the screen.
+    // It uses the overlay image plane.
+    // The default of this setting is that it is time consuming
+
+    md[i].setGraphics(true);
+    md[i].setGrayLevelPrecision(0.7);
+    md[i].setSizePrecision(0.5);
+
+    for (unsigned int j = 0; j < i; j++)
+      md[j].display(I);
+
+    // flush the display buffer
+    vpDisplay::flush(I);
+    try {
+      if (opt_click_allowed)
+        md[i].initTracking(I);
+      else
+        md[i].initTracking(I, ip[i]);
     }
-    for (unsigned int i = 0; i < 4; i++) {
-      // by using setGraphics, we request to see the edges of the dot
-      // in red on the screen.
-      // It uses the overlay image plane.
-      // The default of this setting is that it is time consumming
+    catch (...) {
+    }
 
-      md[i].setGraphics(true);
-      md[i].setGrayLevelPrecision(0.7);
-      md[i].setSizePrecision(0.5);
-
-      for (unsigned int j = 0; j < i; j++)
-        md[j].display(I);
-
+    mcog[i] = md[i].getCog();
+    // an exception is thrown by the track method if
+    //  - dot is lost
+    //  - the number of pixel is too small
+    //  - too many pixels are detected (this is usual when a "big" specularity
+    //    occurs. The threshold can be modified using the setNbMaxPoint(int) method
+    if (opt_display) {
+      md[i].display(I);
       // flush the display buffer
       vpDisplay::flush(I);
-      try {
-        if (opt_click_allowed)
-          md[i].initTracking(I);
-        else
-          md[i].initTracking(I, ip[i]);
-      } catch (...) {
-      }
-
-      mcog[i] = md[i].getCog();
-      // an expcetion is thrown by the track method if
-      //  - dot is lost
-      //  - the number of pixel is too small
-      //  - too many pixels are detected (this is usual when a "big"
-      //  specularity
-      //    occurs. The threshold can be modified using the
-      //    setNbMaxPoint(int) method
-      if (opt_display) {
-        md[i].display(I);
-        // flush the display buffer
-        vpDisplay::flush(I);
-      }
     }
-  } catch (const vpException &e) {
-    vpERROR_TRACE("Error while tracking dots");
-    vpCTRACE << e;
-    return;
   }
 
   if (opt_display) {
@@ -466,8 +435,9 @@ void computeInitialPose(vpCameraParameters *mcam, vpImage<unsigned char> &I, vpP
     //   vpDisplay::displayCross_uv(Image, column index, row index, size,
     //   color)
 
-    for (unsigned int i = 0; i < 4; i++)
+    for (unsigned int i = 0; i < 4; ++i) {
       vpDisplay::displayCross(I, mcog[i], 10, vpColor::red);
+    }
 
     // flush the X11 buffer
     vpDisplay::flush(I);
@@ -484,12 +454,12 @@ void computeInitialPose(vpCameraParameters *mcam, vpImage<unsigned char> &I, vpP
   double l = 0.06;
   double L = 0.07;
   mP[0].setWorldCoordinates(-L, -l, 0); // (X,Y,Z)
-  mP[1].setWorldCoordinates(L, -l, 0);
-  mP[2].setWorldCoordinates(L, l, 0);
-  mP[3].setWorldCoordinates(-L, l, 0);
+  mP[1].setWorldCoordinates(+L, -l, 0);
+  mP[2].setWorldCoordinates(+L, +l, 0);
+  mP[3].setWorldCoordinates(-L, +l, 0);
 
   // pixel-> meter conversion
-  for (unsigned int i = 0; i < 4; i++) {
+  for (unsigned int i = 0; i < 4; ++i) {
     // u[i]. v[i] are expressed in pixel
     // conversion in meter is achieved using
     // x = (u-u0)/px
@@ -503,18 +473,17 @@ void computeInitialPose(vpCameraParameters *mcam, vpImage<unsigned char> &I, vpP
 
   // The pose structure is build, we put in the point list the set of point
   // here both 2D and 3D world coordinates are known
-  for (unsigned int i = 0; i < 4; i++) {
+  for (unsigned int i = 0; i < 4; ++i) {
     mPose->addPoint(mP[i]); // and added to the pose computation point list
   }
 
   // compute the initial pose using Dementhon method followed by a non linear
-  // minimisation method
+  // minimization method
 
   // Compute initial pose
   mPose->computePose(vpPose::DEMENTHON_LAGRANGE_VIRTUAL_VS, *cMo);
 
-  // Display breifly just to have a glimpse a the ViSP pose
-  //	while(cpt<500){
+  // Display briefly just to have a glimpse a the ViSP pose
   if (opt_display) {
     // Display the computed pose
     mPose->display(I, *cMo, *mcam, 0.05, vpColor::red);
@@ -559,26 +528,26 @@ int main(int argc, const char **argv)
       ipath = opt_ipath;
 
     // Compare ipath and env_ipath. If they differ, we take into account
-    // the input path comming from the command line option
+    // the input path coming from the command line option
     if (!opt_ipath.empty() && !env_ipath.empty() && opt_ppath.empty()) {
       if (ipath != env_ipath) {
         std::cout << std::endl << "WARNING: " << std::endl;
         std::cout << "  Since -i <visp image path=" << ipath << "> "
-                  << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
-                  << "  we skip the environment variable." << std::endl;
+          << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
+          << "  we skip the environment variable." << std::endl;
       }
     }
 
     // Test if an input path is set
     if (opt_ipath.empty() && env_ipath.empty() && opt_ppath.empty()) {
-      usage(argv[0], NULL, ipath, opt_ppath);
+      usage(argv[0], nullptr, ipath, opt_ppath);
       std::cerr << std::endl << "ERROR:" << std::endl;
       std::cerr << "  Use -i <visp image path> option or set VISP_INPUT_IMAGE_PATH " << std::endl
-                << "  environment variable to specify the location of the " << std::endl
-                << "  image path where test images are located." << std::endl
-                << "  Use -p <personal image path> option if you want to " << std::endl
-                << "  use personal images." << std::endl
-                << std::endl;
+        << "  environment variable to specify the location of the " << std::endl
+        << "  image path where test images are located." << std::endl
+        << "  Use -p <personal image path> option if you want to " << std::endl
+        << "  use personal images." << std::endl
+        << std::endl;
 
       return EXIT_FAILURE;
     }
@@ -595,7 +564,8 @@ int main(int argc, const char **argv)
       s << "image.%04d.";
       s << ext;
       filename = vpIoTools::createFilePath(dirname, s.str());
-    } else {
+    }
+    else {
       filename = opt_ppath;
     }
 
@@ -624,7 +594,7 @@ int main(int argc, const char **argv)
     vpCameraParameters mcam;
 
     try {
-      vpCTRACE << "Load: " << filename << std::endl;
+      std::cout << "Load: " << filename << std::endl;
       grabber.open(Idisplay);
       grabber.acquire(Idisplay);
       vpCameraParameters mcamTmp(592, 570, grabber.getWidth() / 2, grabber.getHeight() / 2);
@@ -636,34 +606,41 @@ int main(int argc, const char **argv)
       // Associate the grabber to the RGBa image
       grabber.open(IC);
       mcam.init(mcamTmp);
-    } catch (...) {
+    }
+    catch (...) {
       std::cerr << std::endl << "ERROR:" << std::endl;
       std::cerr << "  Cannot read " << filename << std::endl;
       std::cerr << "  Check your -i " << ipath << " option " << std::endl
-                << "  or VISP_INPUT_IMAGE_PATH environment variable." << std::endl;
+        << "  or VISP_INPUT_IMAGE_PATH environment variable." << std::endl;
       return EXIT_FAILURE;
     }
 
-    // Create a vpRAOgre object with color background
+    //![Ogre initialization]
+    // Create a vpAROgre object with color background
     vpAROgreExample ogre(mcam, (unsigned int)grabber.getWidth(), (unsigned int)grabber.getHeight());
     // Initialize it
-    ogre.init(IC);
-
+    bool bufferedKeys = false, hidden = false;
+    ogre.init(IC, bufferedKeys, hidden);
+    //![Ogre initialization]
     double t0 = vpTime::measureTimeMs();
+    bool quit = false;
 
-    // Rendering loop
-    while (ogre.continueRendering() && !grabber.end()) {
+    //![Rendering loop]
+    while (ogre.continueRendering() && !grabber.end() && !quit) {
+      //![Image acquisition]
       // Acquire a frame
       grabber.acquire(IC);
 
       // Convert it to a grey level image for tracking purpose
       vpImageConvert::convert(IC, I);
+      //![Image acquisition]
 
+      //![Pose computation]
       // kill the point list
       mPose.clearPoint();
 
       // track the dot
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 4; ++i) {
         // track the point
         md[i].track(I, mcog[i]);
         md[i].setGrayLevelPrecision(0.90);
@@ -681,29 +658,39 @@ int main(int argc, const char **argv)
       // the pose structure has been updated
 
       // the pose is now updated using the virtual visual servoing approach
-      // Dementhon or lagrange is no longuer necessary, pose at the
+      // Dementhon or lagrange is no longer necessary, pose at the
       // previous iteration is sufficient
       mPose.computePose(vpPose::VIRTUAL_VS, cMo);
+      //![Pose computation]
 
+      //![Rendering]
       // Display with ogre
       ogre.display(IC, cMo);
+      //![Rendering]
 
       // Wait so that the video does not go too fast
+      vpTime::wait(15);
+
+      // Measure loop fps
       double t1 = vpTime::measureTimeMs();
       std::cout << "\r> " << 1000 / (t1 - t0) << " fps";
       t0 = t1;
     }
+    //![Rendering loop]
     // Close the grabber
     grabber.close();
 
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch a ViSP exception: " << e << std::endl;
     return EXIT_FAILURE;
-  } catch (Ogre::Exception &e) {
+  }
+  catch (Ogre::Exception &e) {
     std::cout << "Catch an Ogre exception: " << e.getDescription() << std::endl;
     return EXIT_FAILURE;
-  } catch (...) {
+  }
+  catch (...) {
     std::cout << "Catch an exception " << std::endl;
     return EXIT_FAILURE;
   }
@@ -713,7 +700,7 @@ int main()
 {
 #if (!(defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI)))
   std::cout << "You do not have X11, or GTK, or GDI (Graphical Device Interface) functionalities to display images..."
-            << std::endl;
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

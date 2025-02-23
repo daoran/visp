@@ -1,14 +1,16 @@
+cmake_minimum_required(VERSION 3.10)
+
 project(tutorial-tracking-mb)
 
-cmake_minimum_required(VERSION 3.0)
-
-find_package(VISP REQUIRED visp_core visp_mbt visp_io visp_gui visp_sensor)
+find_package(VISP REQUIRED visp_core visp_mbt visp_io visp_gui visp_sensor visp_vision)
 
 # set the list of source files
 set(tutorial_cpp
   tutorial-mb-generic-tracker.cpp
   tutorial-mb-generic-tracker-live.cpp
   tutorial-mb-generic-tracker-full.cpp
+  tutorial-mb-generic-tracker-save.cpp
+  tutorial-mb-generic-tracker-read.cpp
 )
 
 foreach(cpp ${tutorial_cpp})
@@ -39,6 +41,8 @@ foreach(cpp ${tutorial_cpp})
     list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-reorder")
     list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-sign-compare")
     list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-unused-function")
+    list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-unqualified-std-cast-call")
+    list(APPEND CXX_FLAGS_MUTE_WARNINGS "-Wno-missing-field-initializers")
   endif()
 
   if(CXX_FLAGS_MUTE_WARNINGS)

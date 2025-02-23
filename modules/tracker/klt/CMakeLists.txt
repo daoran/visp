@@ -1,7 +1,7 @@
 #############################################################################
 #
 # ViSP, open source Visual Servoing Platform software.
-# Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+# Copyright (C) 2005 - 2023 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GPL, please contact Inria about acquiring a ViSP Professional
 # Edition License.
 #
-# See http://visp.inria.fr for more information.
+# See https://visp.inria.fr for more information.
 #
 # This software was developed at:
 # Inria Rennes - Bretagne Atlantique
@@ -31,14 +31,17 @@
 # Description:
 # ViSP configuration file.
 #
-# Authors:
-# Fabien Spindler
-#
 #############################################################################
 
 # Add optional 3rd parties
 set(opt_incs "")
+set(opt_system_incs "")
 set(opt_libs "")
+
+if(USE_NLOHMANN_JSON AND NOT VISP_HAVE_NLOHMANN_JSON_FROM_VTK)
+  get_target_property(_inc_dirs "nlohmann_json::nlohmann_json" INTERFACE_INCLUDE_DIRECTORIES)
+  list(APPEND opt_system_incs ${_inc_dirs})
+endif()
 
 # OpenCV
 if(USE_OPENCV)
@@ -143,18 +146,12 @@ if(USE_OPENCV)
 #    list(APPEND opt_libs ${OpenCV_LIBS})
   endif()
   if(OpenCV_INCLUDE_DIRS)
-    list(APPEND opt_incs ${OpenCV_INCLUDE_DIRS})
+    list(APPEND opt_system_incs ${OpenCV_INCLUDE_DIRS})
   endif()
 endif(USE_OPENCV)
 
 vp_add_module(klt visp_core)
 vp_glob_module_sources()
-vp_module_include_directories(${opt_incs})
+vp_module_include_directories(${opt_incs} SYSTEM ${opt_system_incs})
 vp_create_module(${opt_libs})
 vp_add_tests()
-
-vp_set_source_file_compile_flag(src/vpKltOpencv.cpp -Wno-strict-overflow)
-
-if(USE_OPENCV)
-  vp_set_source_file_compile_flag(src/vpKltOpencv.cpp -Wno-float-equal)
-endif()

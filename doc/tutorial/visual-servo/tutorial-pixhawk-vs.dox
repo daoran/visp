@@ -77,14 +77,14 @@ The following software is necessary for \ref pixhawk_part1
   $ mkdir -p $VISP_WS/3rdparty
   $ cd $VISP_WS/3rdparty
   \endverbatim
-  \note At the time this tutorial was written, the latest release was tagged `v1.4.13`. In the next command you need
+  \note At the time this tutorial was written, the latest release was tagged `v3.0.0`. In the next command you need
   to adapt the version to the last release.
 
   \verbatim
-  $ git clone --recursive --branch v1.4.13 https://github.com/mavlink/MAVSDK
+  $ git clone --recursive --branch v3.0.0 https://github.com/mavlink/MAVSDK
   $ mkdir MAVSDK/build
   $ cd MAVSDK/build
-  $ cmake ../ -DCMAKE_BUILD_TYPE=releases
+  $ cmake ../ -DCMAKE_BUILD_TYPE=Release
   $ make -j$(nproc)
   $ sudo make install
   \endverbatim
@@ -97,7 +97,7 @@ it will enable vpRobotMavlink usage.
   When using PX4, it is important to install [QGroundControl](http://qgroundcontrol.com/) (QGC) following instructions
 [here](https://docs.qgroundcontrol.com/master/en/getting_started/download_and_install.html).
 
-  \note When launching `QGroundControl` if you experience the following error (occured with Ubuntu 22.04):
+  \note When launching `QGroundControl` if you experience the following error (occurred with Ubuntu 22.04):
   \verbatim
   $ ./QGroundControl.AppImage
   dlopen(): error loading libfuse.so.2
@@ -201,7 +201,7 @@ $ mavproxy.py --master=/dev/ttyACM0 --out=udpout:192.168.30.111:14550 --out=udpo
 
 \subsection pixhawk_stream_mocap Stream MoCap to Pixhawk
 
-The code sendMocapToPixhawk.cpp allows you to send the MoCap stream comming from a Qualisys or Vicon motion capture system
+The code sendMocapToPixhawk.cpp allows you to send the MoCap stream coming from a Qualisys or Vicon motion capture system
 to the Pixhawk using MavLink. This code is based on vpMocapQualisys and vpMocapVicon classes that allows to get the vehicle FLU body
 frame in the MoCAP ENU reference frame. Then we use vpRobotMavsdk class and more precisely vpRobotMavsdk::sendMocapData() that internally send the
 FRD body frame pose with respect to the NED reference frame as a MavLink message to the Pixhawk.
@@ -253,7 +253,7 @@ $ cd $VISP_WS/visp-build/modules/robot
 $ ./testPixhawkDroneTakeoff udp://:14553
 \endverbatim
 
-\note The vpRobtMavsdk class is not dedicate explicitely to flying vehicles. It can also be used to control a rover. If you are interested in
+\note The vpRobtMavsdk class is not dedicate explicitly to flying vehicles. It can also be used to control a rover. If you are interested in
 you may try the test testPixhawkRoverVelocityControl.cpp
 
 \subsection pixhawk_fly Control the drone with a keyboard
@@ -272,7 +272,7 @@ In order to do this part, make sure you add a camera to your drone. We added a i
 Jetson through USB.
 
 The code servoPixhawkDroneIBVS.cpp is an example that needs to be run on the Jetson and that allows to do visual servoing with the drone.
-This program establishes a rigid link between the drone (equiped with a camera) and an Apriltag.
+This program establishes a rigid link between the drone (equipped with a camera) and an Apriltag.
 Depending on where the camera is placed, the matrices expressing the transformation between the FLU body frame of the drone and the
 camera frame need to be modified. Here is a picture of the drone showing where the D405 camera was attached.
 

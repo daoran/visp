@@ -1,4 +1,5 @@
 //! \example tutorial-matching-keypoint.cpp
+#include <visp3/core/vpConfig.h>
 #include <visp3/gui/vpDisplayOpenCV.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpVideoReader.h>
@@ -9,8 +10,13 @@
 int main()
 {
 //! [Define]
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020101)
-  //! [Define]
+#if defined(HAVE_OPENCV_HIGHGUI) && defined(HAVE_OPENCV_IMGPROC) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000)  && defined(HAVE_OPENCV_CALIB3D) && defined(HAVE_OPENCV_FEATURES2D)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D) && defined(HAVE_OPENCV_FEATURES))
+//! [Define]
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
   vpImage<unsigned char> I;
 
   vpVideoReader reader;

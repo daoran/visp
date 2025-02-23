@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,17 +31,14 @@
  * Description:
  * Klt cylinder, containing points of interest.
  *
- * Authors:
- * Aurelien Yol
- *
- *****************************************************************************/
+*****************************************************************************/
 
 #ifndef vpMbtDistanceKltCylinder_h
 #define vpMbtDistanceKltCylinder_h
 
 #include <visp3/core/vpConfig.h>
 
-#if defined(VISP_HAVE_MODULE_KLT) && (defined(VISP_HAVE_OPENCV) && (VISP_HAVE_OPENCV_VERSION >= 0x020100))
+#if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO)
 
 #include <map>
 
@@ -55,6 +52,7 @@
 #include <visp3/mbt/vpMbHiddenFaces.h>
 #include <visp3/vision/vpHomography.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpMbtDistanceKltCylinder
 
@@ -120,7 +118,7 @@ private:
   //        initPoints(), initPoints3D(), curPoints(), curPointsInd(),
   //        nbPointsCur(0), nbPointsInit(0), minNbPoint(4),
   //        enoughPoints(false), cam(), isTrackedKltCylinder(true),
-  //        listIndicesCylinderBBox(), hiddenface(NULL), useScanLine(false)
+  //        listIndicesCylinderBBox(), hiddenface(nullptr), useScanLine(false)
   //    {
   //      throw vpException(vpException::functionNotImplementedError, "Not
   //      implemented!");
@@ -130,6 +128,11 @@ private:
   //      implemented!"); return *this;
   //    }
   //#endif
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  vpMbtDistanceKltCylinder(const vpMbtDistanceKltCylinder &) = delete; // non construction-copyable
+  vpMbtDistanceKltCylinder &operator=(const vpMbtDistanceKltCylinder &) = delete; // non copyable
+#endif
 
 public:
   vpMbtDistanceKltCylinder();
@@ -213,13 +216,9 @@ public:
   */
   inline void setTracked(const bool &track) { this->isTrackedKltCylinder = track; }
 
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020408)
   void updateMask(cv::Mat &mask, unsigned char _nb = 255, unsigned int _shiftBorder = 0);
-#else
-  void updateMask(IplImage *mask, unsigned char _nb = 255, unsigned int _shiftBorder = 0);
-#endif
 };
-
+END_VISP_NAMESPACE
 #endif
 
 #endif // VISP_HAVE_OPENCV

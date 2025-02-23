@@ -1,7 +1,7 @@
 #############################################################################
 #
 # ViSP, open source Visual Servoing Platform software.
-# Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+# Copyright (C) 2005 - 2023 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GPL, please contact Inria about acquiring a ViSP Professional
 # Edition License.
 #
-# See http://visp.inria.fr for more information.
+# See https://visp.inria.fr for more information.
 #
 # This software was developed at:
 # Inria Rennes - Bretagne Atlantique
@@ -29,15 +29,13 @@
 # WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
 # Description:
-# Try to find libBiclops, libPMD and libUtils for Biclops head.
+# Try to find ARSDK libraries.
 # Once run this will define:
 #
-# BICLOPS_FOUND
-# BICLOPS_INCLUDE_DIRS
-# BICLOPS_LIBRARIES
-#
-# Authors:
-# Fabien Spindler
+# ARSDK_FOUND
+# ARSDK_INCLUDE_DIRS
+# ARSDK_LIBRARIES
+# ARSDK_VERSION
 #
 #############################################################################
 
@@ -153,6 +151,8 @@ if(ARSDK_INCLUDE_DIR AND ARSDK_ARController_LIBRARY AND ARSDK_ARSAL_LIBRARY AND 
       ${ARSDK_ARNetworkAL_LIBRARY} ${ARSDK_ARCommands_LIBRARY} ${ARSDK_ARDiscovery_LIBRARY} ${ARSDK_ARDataTransfer_LIBRARY}
       ${ARSDK_ARMedia_LIBRARY} ${ARSDK_ARStream_LIBRARY} ${ARSDK_ARStream2_LIBRARY} ${ARSDK_futils_LIBRARY} ${ARSDK_mux_LIBRARY}
       ${ARSDK_pomp_LIBRARY} ${ARSDK_rtsp_LIBRARY} ${ARSDK_ulog_LIBRARY} ${ARSDK_sdp_LIBRARY})
+  vp_parse_header2(ARSDK "${ARSDK_INCLUDE_DIR}/libARCommands/ARCOMMANDS_Version.h" ARCOMMANDS_VERSION_STRING)
+  set(ARSDK_VERSION ${ARSDK_VERSION_STRING})
 else()
   set(ARSDK_FOUND FALSE)
 endif()
@@ -175,4 +175,5 @@ mark_as_advanced(
   ARSDK_rtsp_LIBRARY
   ARSDK_ulog_LIBRARY
   ARSDK_sdp_LIBRARY
+  ARSDK_VERSION_STRING
 )

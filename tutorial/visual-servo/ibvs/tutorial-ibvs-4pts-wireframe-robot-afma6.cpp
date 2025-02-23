@@ -1,13 +1,13 @@
 /*! \example tutorial-ibvs-4pts-wireframe-robot-afma6.cpp */
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/core/vpConfig.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/robot/vpSimulatorAfma6.h>
 #include <visp3/visual_features/vpFeatureBuilder.h>
 #include <visp3/vs/vpServo.h>
 
-void display_trajectory(const vpImage<unsigned char> &I, std::vector<vpPoint> &point, const vpHomogeneousMatrix &cMo,
-                        const vpCameraParameters &cam);
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void display_trajectory(const vpImage<unsigned char> &I, std::vector<vpPoint> &point, const vpHomogeneousMatrix &cMo,
                         const vpCameraParameters &cam)
@@ -30,7 +30,13 @@ void display_trajectory(const vpImage<unsigned char> &I, std::vector<vpPoint> &p
 
 int main()
 {
-#if defined(VISP_HAVE_PTHREAD)
+#if defined(VISP_HAVE_THREADS)
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
+
   try {
     vpHomogeneousMatrix cdMo(0, 0, 0.75, 0, 0, 0);
     vpHomogeneousMatrix cMo(-0.15, 0.1, 1., vpMath::rad(-10), vpMath::rad(10), vpMath::rad(50));
@@ -92,7 +98,7 @@ int main()
       std::cout << "Joint " << i << ": min " << qmin[i] << " max " << qmax[i] << " (m)" << std::endl;
     for (unsigned int i = 3; i < qmin.size(); i++)
       std::cout << "Joint " << i << ": min " << vpMath::deg(qmin[i]) << " max " << vpMath::deg(qmax[i]) << " (deg)"
-                << std::endl;
+      << std::endl;
 
     robot.init(vpAfma6::TOOL_CCMOP, vpCameraParameters::perspectiveProjWithoutDistortion);
     robot.setRobotState(vpRobot::STATE_VELOCITY_CONTROL);
@@ -104,12 +110,12 @@ int main()
     robot.setDesiredCameraPosition(cdMo);
 
     vpImage<unsigned char> Iint(480, 640, 255);
-#if defined(VISP_HAVE_X11)
-    vpDisplayX displayInt(Iint, 700, 0, "Internal view");
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI displayInt(Iint, 700, 0, "Internal view");
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV displayInt(Iint, 700, 0, "Internal view");
+#if defined(VISP_HAVE_DISPLAY)
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display = vpDisplayFactory::createDisplay(Iint, 700, 0, "Internal view");
+#else
+    display = vpDisplayFactory::allocateDisplay(Iint, 700, 0, "Internal view");
+#endif
 #else
     std::cout << "No image viewer is available..." << std::endl;
 #endif
@@ -152,8 +158,14 @@ int main()
 
       vpTime::wait(1000 * robot.getSamplingTime());
     }
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
   }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
+#endif
 #endif
 }

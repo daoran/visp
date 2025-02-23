@@ -2,9 +2,7 @@
 #include <cstdlib>
 #include <visp3/core/vpConfig.h>
 #include <visp3/core/vpIoTools.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 //! [Include]
 #include <visp3/mbt/vpMbGenericTracker.h>
@@ -13,34 +11,48 @@
 
 int main(int argc, char **argv)
 {
-#if defined(VISP_HAVE_OPENCV) && (VISP_HAVE_OPENCV_VERSION >= 0x020300)
+#if defined(VISP_HAVE_OPENCV) && defined(VISP_HAVE_PUGIXML) && defined(VISP_HAVE_DISPLAY)
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display_left;
+  std::shared_ptr<vpDisplay> display_right;
+#else
+  vpDisplay *display_left = nullptr;
+  vpDisplay *display_right = nullptr;
+#endif
+
   try {
     std::string opt_videoname_left = "teabox_left.mp4";
     std::string opt_videoname_right = "teabox_right.mp4";
     int opt_tracker1 = vpMbGenericTracker::EDGE_TRACKER;
     int opt_tracker2 = vpMbGenericTracker::EDGE_TRACKER;
 
-    for (int i = 0; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
       if (std::string(argv[i]) == "--name" && i + 2 < argc) {
-        opt_videoname_left = std::string(argv[i + 1]);
-        opt_videoname_right = std::string(argv[i + 2]);
-      } else if (std::string(argv[i]) == "--tracker" && i + 2 < argc) {
-        opt_tracker1 = atoi(argv[i + 1]);
-        opt_tracker2 = atoi(argv[i + 2]);
-      } else if (std::string(argv[i]) == "--help") {
+        opt_videoname_left = std::string(argv[++i]);
+        opt_videoname_right = std::string(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--tracker" && i + 2 < argc) {
+        opt_tracker1 = atoi(argv[++i]);
+        opt_tracker2 = atoi(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
         std::cout << "\nUsage: " << argv[0]
-                  << " [--name <video name left> <video name right>]"
-                     " [--tracker <1=egde|2=klt|3=hybrid> <1=egde|2=klt|3=hybrid>]"
-                     " [--help]\n"
-                  << std::endl;
+          << " [--name <video name left> <video name right>]"
+          << " [--tracker <1=egde|2=klt|3=hybrid> <1=egde|2=klt|3=hybrid>]"
+          << " [--help,-h]\n"
+          << std::endl;
         return EXIT_SUCCESS;
       }
     }
 
     if ((opt_tracker1 < 1 || opt_tracker1 > 3) && (opt_tracker2 < 1 || opt_tracker2 > 3)) {
       std::cerr << "Wrong tracker type. Correct values are: "
-                   "1=egde|2=keypoint|3=hybrid."
-                << std::endl;
+        "1=egde|2=keypoint|3=hybrid."
+        << std::endl;
       return EXIT_SUCCESS;
     }
 
@@ -54,11 +66,11 @@ int main(int argc, char **argv)
 
     std::cout << "Video name: " << opt_videoname_left << " ; " << opt_videoname_right << std::endl;
     std::cout << "Tracker requested config files: " << objectname_left << ".[init, cao]"
-              << " and " << objectname_right << ".[init, cao]" << std::endl;
+      << " and " << objectname_right << ".[init, cao]" << std::endl;
     std::cout << "Tracker optional config files: " << opt_videoname_left << ".ppm"
-              << " and " << opt_videoname_right << ".ppm" << std::endl;
+      << " and " << opt_videoname_right << ".ppm" << std::endl;
 
-    //! [Images]
+//! [Images]
     vpImage<unsigned char> I_left, I_right;
     //! [Images]
 
@@ -68,22 +80,19 @@ int main(int argc, char **argv)
     g_right.setFileName(opt_videoname_right);
     g_right.open(I_right);
 
-#if defined(VISP_HAVE_X11)
-    vpDisplayX display_left;
-    vpDisplayX display_right;
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI display_left;
-    vpDisplayGDI display_right;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display_left = vpDisplayFactory::createDisplay();
+    display_right = vpDisplayFactory::createDisplay();
 #else
-    vpDisplayOpenCV display_left;
-    vpDisplayOpenCV display_right;
+    display_left = vpDisplayFactory::allocateDisplay();
+    display_right = vpDisplayFactory::allocateDisplay();
 #endif
-    display_left.setDownScalingFactor(vpDisplay::SCALE_AUTO);
-    display_right.setDownScalingFactor(vpDisplay::SCALE_AUTO);
-    display_left.init(I_left, 100, 100, "Model-based tracker (Left)");
-    display_right.init(I_right, 110 + (int)I_left.getWidth(), 100, "Model-based tracker (Right)");
+    display_left->setDownScalingFactor(vpDisplay::SCALE_AUTO);
+    display_right->setDownScalingFactor(vpDisplay::SCALE_AUTO);
+    display_left->init(I_left, 100, 100, "Model-based tracker (Left)");
+    display_right->init(I_right, 110 + (int)I_left.getWidth(), 100, "Model-based tracker (Right)");
 
-    //! [Constructor]
+//! [Constructor]
     std::vector<int> trackerTypes(2);
     trackerTypes[0] = opt_tracker1;
     trackerTypes[1] = opt_tracker2;
@@ -91,11 +100,14 @@ int main(int argc, char **argv)
     //! [Constructor]
 
 #if !defined(VISP_HAVE_MODULE_KLT)
-    if (opt_tracker >= 2) {
-      std::cout << "klt and hybrid model-based tracker are not available "
-                   "since visp_klt module is missing"
-                << std::endl;
-      return EXIT_SUCCESS;
+    unsigned int nbTracker = trackerTypes.size();
+    for (unsigned int i = 0; i < nbTracker; ++i) {
+      if (trackerTypes[i] >= 2) {
+        std::cout << "klt and hybrid model-based tracker are not available "
+          "since visp_klt module is missing"
+          << std::endl;
+        return EXIT_SUCCESS;
+      }
     }
 #endif
 
@@ -160,9 +172,18 @@ int main(int argc, char **argv)
       }
     }
     vpDisplay::getClick(I_left);
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cerr << "Catch a ViSP exception: " << e.what() << std::endl;
   }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display_left != nullptr) {
+    delete display_left;
+  }
+  if (display_right != nullptr) {
+    delete display_right;
+  }
+#endif
 #else
   (void)argc;
   (void)argv;

@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,18 +31,14 @@
  * Description:
  * Klt polygon, containing points of interest.
  *
- * Authors:
- * Romain Tallonneau
- * Aurelien Yol
- *
- *****************************************************************************/
+*****************************************************************************/
 
-#ifndef vpMbtDistanceKltPoints_h
-#define vpMbtDistanceKltPoints_h
+#ifndef _vpMbtDistanceKltPoints_h_
+#define _vpMbtDistanceKltPoints_h_
 
 #include <visp3/core/vpConfig.h>
 
-#if defined(VISP_HAVE_MODULE_KLT) && (defined(VISP_HAVE_OPENCV) && (VISP_HAVE_OPENCV_VERSION >= 0x020100))
+#if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO)
 
 #include <map>
 
@@ -54,6 +50,7 @@
 #include <visp3/mbt/vpMbHiddenFaces.h>
 #include <visp3/vision/vpHomography.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpMbtDistanceKltPoints
 
@@ -121,7 +118,7 @@ private:
   //      curPoints(), curPointsInd(),
   //        nbPointsCur(0), nbPointsInit(0), minNbPoint(4),
   //        enoughPoints(false), dt(1.), d0(1.), cam(),
-  //        isTrackedKltPoints(true), polygon(NULL), hiddenface(NULL),
+  //        isTrackedKltPoints(true), polygon(nullptr), hiddenface(nullptr),
   //        useScanLine(false)
   //    {
   //      throw vpException(vpException::functionNotImplementedError, "Not
@@ -133,11 +130,16 @@ private:
   //    }
   //#endif
 
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  vpMbtDistanceKltPoints(const vpMbtDistanceKltPoints &) = delete; // non construction-copyable
+  vpMbtDistanceKltPoints &operator=(const vpMbtDistanceKltPoints &) = delete; // non copyable
+#endif
+
 public:
   vpMbtDistanceKltPoints();
   virtual ~vpMbtDistanceKltPoints();
 
-  unsigned int computeNbDetectedCurrent(const vpKltOpencv &_tracker, const vpImage<bool> *mask = NULL);
+  unsigned int computeNbDetectedCurrent(const vpKltOpencv &_tracker, const vpImage<bool> *mask = nullptr);
   void computeHomography(const vpHomogeneousMatrix &_cTc0, vpHomography &cHc0);
   void computeInteractionMatrixAndResidu(vpColVector &_R, vpMatrix &_J);
 
@@ -189,7 +191,7 @@ public:
 
   inline bool hasEnoughPoints() const { return enoughPoints; }
 
-  void init(const vpKltOpencv &_tracker, const vpImage<bool> *mask = NULL);
+  void init(const vpKltOpencv &_tracker, const vpImage<bool> *mask = nullptr);
 
   /*!
    Return if the klt points are used for tracking.
@@ -214,13 +216,9 @@ public:
   */
   inline void setTracked(const bool &track) { this->isTrackedKltPoints = track; }
 
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020408)
   void updateMask(cv::Mat &mask, unsigned char _nb = 255, unsigned int _shiftBorder = 0);
-#else
-  void updateMask(IplImage *mask, unsigned char _nb = 255, unsigned int _shiftBorder = 0);
-#endif
 };
-
+END_VISP_NAMESPACE
 #endif
 
 #endif // VISP_HAVE_OPENCV

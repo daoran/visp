@@ -1,5 +1,25 @@
 //! \example tutorial-mb-generic-tracker-live.cpp
+#include <iostream>
+
 #include <visp3/core/vpConfig.h>
+
+//! [Undef grabber]
+// #undef VISP_HAVE_V4L2
+// #undef VISP_HAVE_DC1394
+// #undef VISP_HAVE_CMU1394
+// #undef VISP_HAVE_FLYCAPTURE
+// #undef VISP_HAVE_REALSENSE2
+// #undef HAVE_OPENCV_HIGHGUI
+// #undef HAVE_OPENCV_VIDEOIO
+//! [Undef grabber]
+
+#if (defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || \
+   defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2) || \
+   ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || \
+   ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))) && defined(VISP_HAVE_DISPLAY) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_CALIB3D) && defined(HAVE_OPENCV_FEATURES2D)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D) && defined(HAVE_OPENCV_FEATURES))
+
 #ifdef VISP_HAVE_MODULE_SENSOR
 #include <visp3/sensor/vp1394CMUGrabber.h>
 #include <visp3/sensor/vp1394TwoGrabber.h>
@@ -9,29 +29,30 @@
 #endif
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpXmlParserCamera.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/vision/vpKeyPoint.h>
 //! [Include]
 #include <visp3/mbt/vpMbGenericTracker.h>
 //! [Include]
 
-//! [Undef grabber]
-// #undef VISP_HAVE_V4L2
-// #undef VISP_HAVE_DC1394
-// #undef VISP_HAVE_CMU1394
-// #undef VISP_HAVE_FLYCAPTURE
-// #undef VISP_HAVE_REALSENSE2
-// #undef VISP_HAVE_OPENCV
-//! [Undef grabber]
+#if (VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)
+#include <opencv2/highgui/highgui.hpp> // for cv::VideoCapture
+#elif (VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO)
+#include <opencv2/videoio/videoio.hpp> // for cv::VideoCapture
+#endif
 
 int main(int argc, char **argv)
 {
-#if defined(VISP_HAVE_OPENCV) &&                                                                                       \
-    (defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) ||                             \
-     (VISP_HAVE_OPENCV_VERSION >= 0x020100) || defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2))
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
 
   try {
     std::string opt_modelname = "model/teabox/teabox.cao";
@@ -47,44 +68,58 @@ int main(int argc, char **argv)
     std::string opt_intrinsic_file = "";
     std::string opt_camera_name = "";
 
-    for (int i = 0; i < argc; i++) {
-      if (std::string(argv[i]) == "--model") {
-        opt_modelname = std::string(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--tracker") {
-        opt_tracker = atoi(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--camera_device" && i + 1 < argc) {
-        opt_device = atoi(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--max_proj_error") {
-        opt_proj_error_threshold = atof(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--use_ogre") {
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) == "--model" && i + 1 < argc) {
+        opt_modelname = std::string(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--tracker" && i + 1 < argc) {
+        opt_tracker = atoi(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--camera-device" && i + 1 < argc) {
+        opt_device = atoi(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--max_proj_error" && i + 1 < argc) {
+        opt_proj_error_threshold = atof(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--use_ogre") {
         opt_use_ogre = true;
-      } else if (std::string(argv[i]) == "--use_scanline") {
+      }
+      else if (std::string(argv[i]) == "--use_scanline") {
         opt_use_scanline = true;
-      } else if (std::string(argv[i]) == "--learn") {
+      }
+      else if (std::string(argv[i]) == "--learn") {
         opt_learn = true;
-      } else if (std::string(argv[i]) == "--learning_data" && i + 1 < argc) {
-        opt_learning_data = argv[i + 1];
-      } else if (std::string(argv[i]) == "--auto_init") {
+      }
+      else if (std::string(argv[i]) == "--learning_data" && i + 1 < argc) {
+        opt_learning_data = argv[++i];
+      }
+      else if (std::string(argv[i]) == "--auto_init") {
         opt_auto_init = true;
-      } else if (std::string(argv[i]) == "--display_proj_error") {
+      }
+      else if (std::string(argv[i]) == "--display_proj_error") {
         opt_display_projection_error = true;
-      } else if (std::string(argv[i]) == "--intrinsic" && i + 1 < argc) {
-        opt_intrinsic_file = std::string(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--camera_name" && i + 1 < argc) {
-        opt_camera_name = std::string(argv[i + 1]);
-      } else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
+      }
+      else if (std::string(argv[i]) == "--intrinsic" && i + 1 < argc) {
+        opt_intrinsic_file = std::string(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--camera-name" && i + 1 < argc) {
+        opt_camera_name = std::string(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
         std::cout
-            << "\nUsage: " << argv[0] << " [--camera_device <camera device> (default: 0)]"
-            << " [--intrinsic <intrinsic file> (default: empty)]"
-            << " [--camera_name <camera name>  (default: empty)]"
-            << " [--model <model name> (default: teabox)]"
-            << " [--tracker <0=egde|1=keypoint|2=hybrid> (default: 2)]"
-            << " [--use_ogre] [--use_scanline]"
-            << " [--max_proj_error <allowed projection error> (default: 30)]"
-            << " [--learn] [--auto_init] [--learning_data <data-learned.bin> (default: learning/data-learned.bin)]"
-            << " [--display_proj_error]"
-            << " [--help] [-h]\n"
-            << std::endl;
+          << "\nUsage: " << argv[0] << " [--camera-device <camera device> (default: 0)]"
+          << " [--intrinsic <intrinsic file> (default: empty)]"
+          << " [--camera-name <camera name>  (default: empty)]"
+          << " [--model <model name> (default: teabox)]"
+          << " [--tracker <0=egde|1=keypoint|2=hybrid> (default: 2)]"
+          << " [--use_ogre] [--use_scanline]"
+          << " [--max_proj_error <allowed projection error> (default: 30)]"
+          << " [--learn]"
+          << " [--auto_init]"
+          << " [--learning_data <data-learned.bin> (default: learning/data-learned.bin)]"
+          << " [--display_proj_error]"
+          << " [--help] [-h]\n"
+          << std::endl;
         return EXIT_SUCCESS;
       }
     }
@@ -107,14 +142,14 @@ int main(int argc, char **argv)
     std::cout << "  Display proj. error: " << opt_display_projection_error << std::endl;
     std::cout << "Config files: " << std::endl;
     std::cout << "  Config file : "
-              << "\"" << objectname + ".xml"
-              << "\"" << std::endl;
+      << "\"" << objectname + ".xml"
+      << "\"" << std::endl;
     std::cout << "  Model file  : "
-              << "\"" << objectname + ".cao"
-              << "\"" << std::endl;
+      << "\"" << objectname + ".cao"
+      << "\"" << std::endl;
     std::cout << "  Init file   : "
-              << "\"" << objectname + ".init"
-              << "\"" << std::endl;
+      << "\"" << objectname + ".init"
+      << "\"" << std::endl;
     std::cout << "Learning options   : " << std::endl;
     std::cout << "  Learn       : " << opt_learn << std::endl;
     std::cout << "  Auto init   : " << opt_auto_init << std::endl;
@@ -132,9 +167,13 @@ int main(int argc, char **argv)
     vpCameraParameters cam;
     cam.initPersProjWithoutDistortion(839, 839, 325, 243);
     //! [Set camera parameters]
+
+#if defined(VISP_HAVE_PUGIXML)
     vpXmlParserCamera parser;
-    if (!opt_intrinsic_file.empty() && !opt_camera_name.empty())
+    if (!opt_intrinsic_file.empty() && !opt_camera_name.empty()) {
       parser.parse(cam, opt_intrinsic_file, opt_camera_name, vpCameraParameters::perspectiveProjWithoutDistortion);
+    }
+#endif
 
     //! [cMo]
     vpHomogeneousMatrix cMo;
@@ -177,8 +216,7 @@ int main(int argc, char **argv)
 
     std::cout << "Read camera parameters from Realsense device" << std::endl;
     cam = g.getCameraParameters(RS2_STREAM_COLOR, vpCameraParameters::perspectiveProjWithoutDistortion);
-
-#elif defined(VISP_HAVE_OPENCV)
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI))|| ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
     std::cout << "Use OpenCV grabber on device " << opt_device << std::endl;
     cv::VideoCapture g(opt_device); // Open the default camera
     if (!g.isOpened()) {            // Check if we succeeded
@@ -191,21 +229,17 @@ int main(int argc, char **argv)
 #endif
     //! [Grabber]
 
-    vpDisplay *display = NULL;
-#if defined(VISP_HAVE_X11)
-    display = new vpDisplayX;
-#elif defined(VISP_HAVE_GDI)
-    display = new vpDisplayGDI;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display = vpDisplayFactory::createDisplay();
 #else
-    display = new vpDisplayOpenCV;
+    display = vpDisplayFactory::allocateDisplay();
 #endif
     display->init(I, 100, 100, "Model-based tracker");
 
     while (true) {
-#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) ||                              \
-    defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2)
+#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2)
       g.acquire(I);
-#elif defined(VISP_HAVE_OPENCV)
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI))|| ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
       g >> frame;
       vpImageConvert::convert(frame, I);
 #endif
@@ -223,7 +257,7 @@ int main(int argc, char **argv)
     vpMbGenericTracker tracker;
     if (opt_tracker == 0)
       tracker.setTrackerType(vpMbGenericTracker::EDGE_TRACKER);
-#if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV)
+#if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO)
     else if (opt_tracker == 1)
       tracker.setTrackerType(vpMbGenericTracker::KLT_TRACKER);
     else
@@ -232,11 +266,11 @@ int main(int argc, char **argv)
     else {
 #if !defined(VISP_HAVE_MODULE_KLT)
       std::cout << "klt and hybrid model-based tracker are not available since visp_klt module is not available. "
-                   "In CMakeGUI turn visp_klt module ON, configure and build ViSP again."
-                << std::endl;
+        "In CMakeGUI turn visp_klt module ON, configure and build ViSP again."
+        << std::endl;
 #else
       std::cout << "Hybrid tracking is impossible since OpenCV is not enabled. "
-                << "Install OpenCV, configure and build ViSP again to run this tutorial." << std::endl;
+        << "Install OpenCV, configure and build ViSP again to run this tutorial." << std::endl;
 #endif
       return EXIT_SUCCESS;
     }
@@ -245,10 +279,12 @@ int main(int argc, char **argv)
 
     bool usexml = false;
     //! [Load xml]
+#if defined(VISP_HAVE_PUGIXML)
     if (vpIoTools::checkFilename(objectname + ".xml")) {
       tracker.loadConfigFile(objectname + ".xml");
       usexml = true;
     }
+#endif
     //! [Load xml]
 
     if (!usexml) {
@@ -259,7 +295,8 @@ int main(int argc, char **argv)
         me.setMaskSize(5);
         me.setMaskNumber(180);
         me.setRange(8);
-        me.setThreshold(10000);
+        me.setLikelihoodThresholdType(vpMe::NORMALIZED_THRESHOLD);
+        me.setThreshold(20);
         me.setMu1(0.5);
         me.setMu2(0.5);
         me.setSampleStep(4);
@@ -267,7 +304,7 @@ int main(int argc, char **argv)
         //! [Set moving-edges parameters]
       }
 
-#ifdef VISP_HAVE_MODULE_KLT
+#if defined(VISP_HAVE_MODULE_KLT) && defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO)
       if (opt_tracker == 1 || opt_tracker == 2) {
         //! [Set klt parameters]
         vpKltOpencv klt_settings;
@@ -303,12 +340,11 @@ int main(int argc, char **argv)
     tracker.setProjectionErrorDisplay(opt_display_projection_error);
     //! [Set projection error computation]
 
-#if (defined(VISP_HAVE_OPENCV_NONFREE) || defined(VISP_HAVE_OPENCV_XFEATURES2D)) ||                                    \
-    (VISP_HAVE_OPENCV_VERSION >= 0x030411 && CV_MAJOR_VERSION < 4) || (VISP_HAVE_OPENCV_VERSION >= 0x040400)
+#if ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_XFEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
     std::string detectorName = "SIFT";
     std::string extractorName = "SIFT";
     std::string matcherName = "BruteForce";
-#else
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_FEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
     std::string detectorName = "FAST";
     std::string extractorName = "ORB";
     std::string matcherName = "BruteForce-Hamming";
@@ -318,7 +354,7 @@ int main(int argc, char **argv)
       keypoint.setDetector(detectorName);
       keypoint.setExtractor(extractorName);
       keypoint.setMatcher(matcherName);
-#if !(defined(VISP_HAVE_OPENCV_NONFREE) || defined(VISP_HAVE_OPENCV_XFEATURES2D))
+#if ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_FEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
 #if (VISP_HAVE_OPENCV_VERSION < 0x030000)
       keypoint.setDetectorParameter("ORB", "nLevels", 1);
 #else
@@ -333,11 +369,12 @@ int main(int argc, char **argv)
     if (opt_auto_init) {
       if (!vpIoTools::checkFilename(opt_learning_data)) {
         std::cout << "Cannot enable auto detection. Learning file \"" << opt_learning_data << "\" doesn't exist"
-                  << std::endl;
+          << std::endl;
         return EXIT_FAILURE;
       }
       keypoint.loadLearningData(opt_learning_data, true);
-    } else {
+    }
+    else {
       tracker.initClick(I, objectname + ".init", true);
     }
 
@@ -355,10 +392,9 @@ int main(int argc, char **argv)
 
     while (!quit) {
       double t_begin = vpTime::measureTimeMs();
-#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) ||                              \
-    defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2)
+#if defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_CMU1394) || defined(VISP_HAVE_FLYCAPTURE) || defined(VISP_HAVE_REALSENSE2)
       g.acquire(I);
-#elif defined(VISP_HAVE_OPENCV)
+#elif ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI))|| ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
       g >> frame;
       vpImageConvert::convert(frame, I);
 #endif
@@ -370,11 +406,13 @@ int main(int argc, char **argv)
         if (keypoint.matchPoint(I, cam, cMo)) {
           std::cout << "Auto init succeed" << std::endl;
           tracker.initFromPose(I, cMo);
-        } else {
+        }
+        else {
           vpDisplay::flush(I);
           continue;
         }
-      } else if (tracking_failed) {
+      }
+      else if (tracking_failed) {
         // Manual init
         tracking_failed = false;
         tracker.initClick(I, objectname + ".init", true);
@@ -389,7 +427,8 @@ int main(int argc, char **argv)
           run_auto_init = false;
         }
         tracker.track(I);
-      } catch (const vpException &e) {
+      }
+      catch (const vpException &e) {
         std::cout << "Tracker exception: " << e.getStringMessage() << std::endl;
         tracking_failed = true;
         if (opt_auto_init) {
@@ -403,7 +442,8 @@ int main(int argc, char **argv)
         if (tracker.getTrackerType() & vpMbGenericTracker::EDGE_TRACKER) {
           // Check tracking errors
           proj_error = tracker.getProjectionError();
-        } else {
+        }
+        else {
           tracker.getPose(cMo);
           tracker.getCameraParameters(cam);
           proj_error = tracker.computeCurrentProjectionError(I, cMo, cam);
@@ -435,7 +475,7 @@ int main(int argc, char **argv)
           vpDisplay::displayText(I, 80, 20, ss.str(), vpColor::green);
           ss.str(""); // erase ss
           ss << "Rotation tu: " << std::setprecision(4) << vpMath::deg(pose[3]) << " " << vpMath::deg(pose[4]) << " "
-             << vpMath::deg(pose[5]) << " [deg]";
+            << vpMath::deg(pose[5]) << " [deg]";
           vpDisplay::displayText(I, 100, 20, ss.str(), vpColor::green);
         }
         {
@@ -487,9 +527,11 @@ int main(int argc, char **argv)
       if (vpDisplay::getClick(I, button, false)) {
         if (button == vpMouseButton::button3) {
           quit = true;
-        } else if (button == vpMouseButton::button1 && opt_learn) {
+        }
+        else if (button == vpMouseButton::button1 && opt_learn) {
           learn_position = true;
-        } else if (button == vpMouseButton::button1 && opt_auto_init && !opt_learn) {
+        }
+        else if (button == vpMouseButton::button1 && opt_auto_init && !opt_learn) {
           run_auto_init = true;
         }
       }
@@ -500,22 +542,32 @@ int main(int argc, char **argv)
       std::cout << "Save learning from " << learn_cpt << " images in file: " << opt_learning_data << std::endl;
       keypoint.saveLearningData(opt_learning_data, true, true);
     }
-
-    //! [Cleanup]
-    delete display;
-    //! [Cleanup]
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch a ViSP exception: " << e << std::endl;
   }
-#elif defined(VISP_HAVE_OPENCV)
-  (void)argc;
-  (void)argv;
-  std::cout << "Install a 3rd party dedicated to frame grabbing (dc1394, cmu1394, v4l2, OpenCV, FlyCapture, "
-               "Realsense2), configure and build ViSP again to use this example"
-            << std::endl;
-#else
-  (void)argc;
-  (void)argv;
-  std::cout << "Install OpenCV 3rd party, configure and build ViSP again to use this example" << std::endl;
+
+//! [Cleanup]
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
 #endif
+//! [Cleanup]
 }
+
+#else
+
+int main()
+{
+#if defined(VISP_HAVE_OPENCV)
+  std::cout << "Install a 3rd party dedicated to frame grabbing (dc1394, cmu1394, v4l2, OpenCV, FlyCapture, "
+    << "Realsense2), configure and build ViSP again to use this tutorial."
+    << std::endl;
+#else
+  std::cout << "Install OpenCV 3rd party, configure and build ViSP again to use this tutorial." << std::endl;
+#endif
+  return EXIT_SUCCESS;
+  }
+
+#endif

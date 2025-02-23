@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,24 +29,25 @@
  *
  * Description:
  * Test keypoint matching.
- *
- * Authors:
- * Souriya Trinh
- *
- *****************************************************************************/
+ */
+
+/*!
+  \example testKeyPoint.cpp
+
+  \brief Test keypoint matching.
+*/
 
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
 
-#if defined(VISP_HAVE_OPENCV) && (VISP_HAVE_OPENCV_VERSION >= 0x020301)
+#if defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000)  && defined(HAVE_OPENCV_CALIB3D) && defined(HAVE_OPENCV_FEATURES2D)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D) && defined(HAVE_OPENCV_FEATURES))
 
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpIoTools.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpParseArgv.h>
 #include <visp3/io/vpVideoReader.h>
@@ -55,6 +55,10 @@
 
 // List of allowed command line options
 #define GETOPTARGS "cdh"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void usage(const char *name, const char *badparam);
 bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display);
@@ -70,24 +74,23 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 void usage(const char *name, const char *badparam)
 {
   fprintf(stdout, "\n\
-          Test keypoints matching.\n\
-          \n\
-          SYNOPSIS\n\
-          %s [-c] [-d] [-h]\n",
-          name);
+  Test keypoints matching.\n\
+  \n\
+  SYNOPSIS\n\
+  %s [-c] [-d] [-h]\n", name);
 
   fprintf(stdout, "\n\
-              OPTIONS:                                               \n\
-              \n\
-              -c\n\
-              Disable the mouse click. Useful to automate the \n\
-              execution of this program without human intervention.\n\
-              \n\
-              -d \n\
-              Turn off the display.\n\
-              \n\
-              -h\n\
-              Print the help.\n");
+  OPTIONS:                                               \n\
+  \n\
+  -c\n\
+     Disable the mouse click. Useful to automate the \n\
+     execution of this program without human intervention.\n\
+  \n\
+  -d \n\
+     Turn off the display.\n\
+  \n\
+  -h\n\
+     Print the help.\n");
 
   if (badparam)
     fprintf(stdout, "\nERROR: Bad parameter [%s]\n", badparam);
@@ -118,7 +121,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
       display = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
       break;
 
@@ -131,7 +134,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -169,19 +172,15 @@ void run_test(const std::string &env_ipath, bool opt_click_allowed, bool opt_dis
   Imatch.resize(Icur.getHeight(), 2 * Icur.getWidth());
   Imatch.insert(Iref, vpImagePoint(0, 0));
 
-#if defined VISP_HAVE_X11
-  vpDisplayX display;
-#elif defined VISP_HAVE_GTK
-  vpDisplayGTK display;
-#elif defined VISP_HAVE_GDI
-  vpDisplayGDI display;
-#else
-  vpDisplayOpenCV display;
-#endif
+  vpDisplay *display = nullptr;
 
   if (opt_display) {
-    display.setDownScalingFactor(vpDisplay::SCALE_AUTO);
-    display.init(Imatch, 0, 0, "ORB keypoints matching");
+#ifdef VISP_HAVE_DISPLAY
+    display = vpDisplayFactory::allocateDisplay(Imatch, 0, 0, "ORB keypoints matching");
+    display->setDownScalingFactor(vpDisplay::SCALE_AUTO);
+#else
+    std::cout << "No image viewer is available..." << std::endl;
+#endif
   }
 
   bool opt_click = false;
@@ -210,25 +209,26 @@ void run_test(const std::string &env_ipath, bool opt_click_allowed, bool opt_dis
         if (button == vpMouseButton::button3) {
           opt_click = false;
         }
-      } else {
+      }
+      else {
         // Use right click to enable/disable step by step tracking
         if (vpDisplay::getClick(Imatch, button, false)) {
           if (button == vpMouseButton::button3) {
             opt_click = true;
-          } else if (button == vpMouseButton::button1) {
+          }
+          else if (button == vpMouseButton::button1) {
             break;
           }
         }
       }
     }
   }
+
+  if (display) {
+    delete display;
+  }
 }
 
-/*!
-  \example testKeyPoint.cpp
-
-  \brief   Test keypoint matching.
-*/
 int main(int argc, const char **argv)
 {
   try {
@@ -247,8 +247,8 @@ int main(int argc, const char **argv)
 
     if (env_ipath.empty()) {
       std::cerr << "Please set the VISP_INPUT_IMAGE_PATH environment "
-                   "variable value."
-                << std::endl;
+        "variable value."
+        << std::endl;
       return EXIT_FAILURE;
     }
 
@@ -266,7 +266,8 @@ int main(int argc, const char **argv)
       run_test(env_ipath, opt_click_allowed, opt_display, Iref, Icur, Imatch);
     }
 
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
   }

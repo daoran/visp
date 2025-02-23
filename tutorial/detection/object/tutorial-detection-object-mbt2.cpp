@@ -1,14 +1,19 @@
 //! \example tutorial-detection-object-mbt2.cpp
 #include <visp3/core/vpConfig.h>
 #include <visp3/core/vpIoTools.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpVideoReader.h>
 #include <visp3/mbt/vpMbGenericTracker.h>
 #include <visp3/vision/vpKeyPoint.h>
 
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020400)
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if defined(HAVE_OPENCV_IMGPROC) && defined(VISP_HAVE_DISPLAY) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_CALIB3D) && defined(HAVE_OPENCV_FEATURES2D)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D) && defined(HAVE_OPENCV_FEATURES))
+
 void learnCube(const vpImage<unsigned char> &I, vpMbGenericTracker &tracker, vpKeyPoint &keypoint_learning, int id)
 {
   //! [Keypoints reference detection]
@@ -46,16 +51,26 @@ void learnCube(const vpImage<unsigned char> &I, vpMbGenericTracker &tracker, vpK
 
 int main(int argc, char **argv)
 {
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020400)
+#if defined(HAVE_OPENCV_IMGPROC) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_FEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
+
   //! [MBT code]
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display, display2;
+#else
+  vpDisplay *display = nullptr;
+  vpDisplay *display2 = nullptr;
+#endif
   try {
     std::string videoname = "cube.mp4";
 
-    for (int i = 0; i < argc; i++) {
-      if (std::string(argv[i]) == "--name")
-        videoname = std::string(argv[i + 1]);
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) == "--name" && i + 1 < argc)
+        videoname = std::string(argv[++i]);
       else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
-        std::cout << "\nUsage: " << argv[0] << " [--name <video name>] [--help] [-h]\n" << std::endl;
+        std::cout << "\nUsage: " << argv[0]
+          << " [--name <video name>]"
+          << " [--help] [-h]\n" << std::endl;
         return EXIT_SUCCESS;
       }
     }
@@ -67,8 +82,8 @@ int main(int argc, char **argv)
 
     std::cout << "Video name: " << videoname << std::endl;
     std::cout << "Tracker requested config files: " << objectname << ".[init,"
-              << "xml,"
-              << "cao or wrl]" << std::endl;
+      << "xml,"
+      << "cao or wrl]" << std::endl;
     std::cout << "Tracker optional config files: " << objectname << ".[ppm]" << std::endl;
 
     vpImage<unsigned char> I;
@@ -77,17 +92,20 @@ int main(int argc, char **argv)
 
     vpMbGenericTracker tracker(vpMbGenericTracker::EDGE_TRACKER);
     bool usexml = false;
+#if defined(VISP_HAVE_PUGIXML)
     if (vpIoTools::checkFilename(objectname + ".xml")) {
       tracker.loadConfigFile(objectname + ".xml");
       tracker.getCameraParameters(cam);
       usexml = true;
     }
+#endif
     if (!usexml) {
       vpMe me;
       me.setMaskSize(5);
       me.setMaskNumber(180);
       me.setRange(7);
-      me.setThreshold(5000);
+      me.setLikelihoodThresholdType(vpMe::NORMALIZED_THRESHOLD);
+      me.setThreshold(20);
       me.setMu1(0.5);
       me.setMu2(0.5);
       me.setSampleStep(4);
@@ -103,15 +121,18 @@ int main(int argc, char **argv)
     }
 
     tracker.setOgreVisibilityTest(false);
-    if (vpIoTools::checkFilename(objectname + ".cao"))
+    if (vpIoTools::checkFilename(objectname + ".cao")) {
       tracker.loadModel(objectname + ".cao");
-    else if (vpIoTools::checkFilename(objectname + ".wrl"))
+    }
+    else if (vpIoTools::checkFilename(objectname + ".wrl")) {
       tracker.loadModel(objectname + ".wrl");
+    }
     tracker.setDisplayFeatures(true);
     //! [MBT code]
 
     //! [Keypoint declaration]
     vpKeyPoint keypoint_learning("ORB", "ORB", "BruteForce-Hamming");
+#if ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_FEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
 #if (VISP_HAVE_OPENCV_VERSION < 0x030000)
     keypoint_learning.setDetectorParameter("ORB", "nLevels", 1);
 #else
@@ -120,31 +141,25 @@ int main(int argc, char **argv)
       orb_learning->setNLevels(1);
     }
 #endif
-    //! [Keypoint declaration]
-
-#if defined(VISP_HAVE_X11)
-    vpDisplayX display;
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI display;
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV display;
-#else
-    std::cout << "No image viewer is available..." << std::endl;
-    return EXIT_FAILURE;
 #endif
+    //! [Keypoint declaration]
 
     /*
      * Start the part of the code dedicated to object learning from 3 images
      */
-    std::string imageName[] = {"cube0001.png", "cube0150.png", "cube0200.png"};
+    std::string imageName[] = { "cube0001.png", "cube0150.png", "cube0200.png" };
     vpHomogeneousMatrix initPoseTab[] = {
         vpHomogeneousMatrix(0.02143385294, 0.1098083886, 0.5127439561, 2.087159614, 1.141775176, -0.4701291124),
         vpHomogeneousMatrix(0.02651282185, -0.03713587374, 0.6873765919, 2.314744454, 0.3492296488, -0.1226054828),
-        vpHomogeneousMatrix(0.02965448956, -0.07283091786, 0.7253526051, 2.300529617, -0.4286674806, 0.1788761025)};
+        vpHomogeneousMatrix(0.02965448956, -0.07283091786, 0.7253526051, 2.300529617, -0.4286674806, 0.1788761025) };
     for (int i = 0; i < 3; i++) {
       vpImageIo::read(I, imageName[i]);
       if (i == 0) {
-        display.init(I, 10, 10);
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+        display = vpDisplayFactory::createDisplay(I, 10, 10);
+#else
+        display = vpDisplayFactory::allocateDisplay(I, 10, 10);
+#endif
       }
       std::stringstream title;
       title << "Learning cube on image: " << imageName[i];
@@ -172,7 +187,8 @@ int main(int argc, char **argv)
       vpDisplay::displayText(I, 10, 10, "Learning step: keypoints are detected on visible cube faces", vpColor::red);
       if (i < 2) {
         vpDisplay::displayText(I, 30, 10, "Click to continue the learning...", vpColor::red);
-      } else {
+      }
+      else {
         vpDisplay::displayText(I, 30, 10, "Click to continue with the detection...", vpColor::red);
       }
 
@@ -187,8 +203,9 @@ int main(int argc, char **argv)
     /*
      * Start the part of the code dedicated to detection and localization
      */
-    //! [Init keypoint detection]
+     //! [Init keypoint detection]
     vpKeyPoint keypoint_detection("ORB", "ORB", "BruteForce-Hamming");
+#if ((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_FEATURES2D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_FEATURES))
 #if (VISP_HAVE_OPENCV_VERSION < 0x030000)
     keypoint_detection.setDetectorParameter("ORB", "nLevels", 1);
 #else
@@ -197,6 +214,7 @@ int main(int argc, char **argv)
     if (orb_detector) {
       orb_detector->setNLevels(1);
     }
+#endif
 #endif
     //! [Init keypoint detection]
 
@@ -213,16 +231,11 @@ int main(int argc, char **argv)
     g.setFileName(videoname);
     g.open(I);
 
-#if defined VISP_HAVE_X11
-    vpDisplayX display2;
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK display2;
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI display2;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display2 = vpDisplayFactory::createDisplay(IMatching, 50, 50, "Display matching between learned and current images");
 #else
-    vpDisplayOpenCV display2;
+    display2 = vpDisplayFactory::allocateDisplay(IMatching, 50, 50, "Display matching between learned and current images");
 #endif
-    display2.init(IMatching, 50, 50, "Display matching between learned and current images");
     vpDisplay::setTitle(I, "Cube detection and localization");
 
     double error;
@@ -287,7 +300,7 @@ int main(int argc, char **argv)
         //! [Display model image matching]
         vpCameraParameters cam2;
         cam2.initPersProjWithoutDistortion(cam.get_px(), cam.get_py(), cam.get_u0() + I.getWidth(),
-                                           cam.get_v0() + I.getHeight());
+          cam.get_v0() + I.getHeight());
         tracker.setCameraParameters(cam2);
         tracker.setPose(IMatching, cMo);
         tracker.display(IMatching, cMo, cam2, vpColor::red, 2);
@@ -310,9 +323,19 @@ int main(int argc, char **argv)
 
     if (!click_done)
       vpDisplay::getClick(IMatching);
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
   }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
+
+  if (display2 != nullptr) {
+    delete display2;
+  }
+#endif
 #else
   (void)argc;
   (void)argv;
@@ -320,4 +343,4 @@ int main(int argc, char **argv)
 #endif
 
   return EXIT_SUCCESS;
-}
+  }

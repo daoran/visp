@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,15 +29,11 @@
  *
  * Description:
  * Implements a polygon of the model used by the model-based tracker.
- *
- * Authors:
- * Aurelien Yol
- *
- *****************************************************************************/
+ */
 
 /*!
  \file vpPolygon3D.h
- \brief Implements a 3D polygon with render functionnalities like clipping.
+ \brief Implements a 3D polygon with render functionalities like clipping.
 */
 
 #ifndef vpPolygon3D_HH
@@ -46,20 +41,23 @@
 
 #include <vector>
 
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpMeterPixelConversion.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 #include <visp3/core/vpPoint.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpPolygon3D
   \ingroup group_core_geometry
-  \brief Implements a 3D polygon with render functionnalities like clipping.
+  \brief Implements a 3D polygon with render functionalities like clipping.
 
 */
 class VISP_EXPORT vpPolygon3D
 {
 public:
-  typedef enum {
+  typedef enum
+  {
     NO_CLIPPING = 0,
     NEAR_CLIPPING = 1,
     FAR_CLIPPING = 2,
@@ -167,7 +165,7 @@ public:
     @name Deprecated functions
   */
   //@{
-  vp_deprecated void getRoiClipped(std::vector<vpPoint> &points);
+  VP_DEPRECATED void getRoiClipped(std::vector<vpPoint> &points);
 //@}
 #endif
 
@@ -218,5 +216,47 @@ public:
   static void getMinMaxRoi(const std::vector<vpImagePoint> &roi, int &i_min, int &i_max, int &j_min, int &j_max);
   static bool roiInsideImage(const vpImage<unsigned char> &I, const std::vector<vpImagePoint> &corners);
 };
+END_VISP_NAMESPACE
 
+#ifdef VISP_HAVE_NLOHMANN_JSON
+#include VISP_NLOHMANN_JSON(json.hpp)
+#include <visp3/core/vpJsonParsing.h>
+NLOHMANN_JSON_SERIALIZE_ENUM(VISP_NAMESPACE_ADDRESSING vpPolygon3D::vpPolygon3DClippingType, {
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::NO_CLIPPING, "none"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::NEAR_CLIPPING, "near"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::FAR_CLIPPING, "far"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::LEFT_CLIPPING, "left"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::RIGHT_CLIPPING, "right"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::UP_CLIPPING, "up"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::DOWN_CLIPPING, "down"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::FOV_CLIPPING, "fov"},
+    {VISP_NAMESPACE_ADDRESSING vpPolygon3D::ALL_CLIPPING, "all"}
+});
+
+inline nlohmann::json clippingFlagsToJSON(const int flags)
+{
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+  constexpr std::array<vpPolygon3D::vpPolygon3DClippingType, 3> specificFlags = {
+    vpPolygon3D::ALL_CLIPPING,
+    vpPolygon3D::FOV_CLIPPING,
+    vpPolygon3D::NO_CLIPPING
+  };
+  for (const auto f: specificFlags) {
+    if (flags == f) {
+      return nlohmann::json::array({ f });
+    }
+  }
+  return flagsToJSON<vpPolygon3D::vpPolygon3DClippingType>(flags, {
+    vpPolygon3D::NEAR_CLIPPING,
+    vpPolygon3D::FAR_CLIPPING,
+    vpPolygon3D::LEFT_CLIPPING,
+    vpPolygon3D::RIGHT_CLIPPING,
+    vpPolygon3D::UP_CLIPPING,
+    vpPolygon3D::DOWN_CLIPPING,
+  });
+}
+
+#endif
 #endif

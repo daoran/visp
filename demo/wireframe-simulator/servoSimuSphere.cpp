@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,10 +31,7 @@
  * Description:
  * Demonstration of the wireframe simulator with a simple visual servoing
  *
- * Authors:
- * Nicolas Melchior
- *
- *****************************************************************************/
+*****************************************************************************/
 
 /*!
   \example servoSimuSphere.cpp
@@ -47,6 +44,7 @@
 #include <stdlib.h>
 
 #include <visp3/core/vpCameraParameters.h>
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpIoTools.h>
@@ -54,11 +52,7 @@
 #include <visp3/core/vpSphere.h>
 #include <visp3/core/vpTime.h>
 #include <visp3/core/vpVelocityTwistMatrix.h>
-#include <visp3/gui/vpDisplayD3D.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/gui/vpPlot.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpParseArgv.h>
@@ -71,6 +65,10 @@
 #define GETOPTARGS "dhp"
 
 #if defined(VISP_HAVE_DISPLAY) && (defined(VISP_HAVE_LAPACK) || defined(VISP_HAVE_EIGEN3) || defined(VISP_HAVE_OPENCV))
+
+#if defined(ENABLE_VISP_NAMESPACE)
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 /*!
 
@@ -134,7 +132,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &plot)
       plot = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
 
     default:
@@ -145,7 +143,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &plot)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -177,7 +175,7 @@ void computeVisualFeatures(const vpSphere &sphere, vpGenericFeature &s)
   // if (gx != 0 || gy != 0)
   if (std::fabs(gx) > std::numeric_limits<double>::epsilon() || std::fabs(gy) > std::numeric_limits<double>::epsilon())
     h2 = (vpMath::sqr(gx) + vpMath::sqr(gy)) /
-         (4 * n20 * vpMath::sqr(gy) + 4 * n02 * vpMath::sqr(gx) - 8 * n11 * gx * gy);
+    (4 * n20 * vpMath::sqr(gy) + 4 * n02 * vpMath::sqr(gx) - 8 * n11 * gx * gy);
   else
     h2 = 1 / (4 * n20);
 
@@ -216,6 +214,19 @@ void computeInteractionMatrix(const vpGenericFeature &s, const vpSphere &sphere,
 
 int main(int argc, const char **argv)
 {
+  const unsigned int NB_DISPLAYS = 3;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display[NB_DISPLAYS];
+  for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+    display[i] = vpDisplayFactory::createDisplay();
+  }
+#else
+  vpDisplay *display[NB_DISPLAYS];
+  for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+    display[i] = vpDisplayFactory::allocateDisplay();
+  }
+#endif
+  unsigned int exit_status = EXIT_SUCCESS;
   try {
     bool opt_display = true;
     bool opt_plot = true;
@@ -225,27 +236,15 @@ int main(int argc, const char **argv)
       return EXIT_FAILURE;
     }
 
-    vpImage<vpRGBa> Iint(480, 640, 255);
-    vpImage<vpRGBa> Iext1(480, 640, 255);
-    vpImage<vpRGBa> Iext2(480, 640, 255);
-
-#if defined VISP_HAVE_X11
-    vpDisplayX display[3];
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV display[3];
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI display[3];
-#elif defined VISP_HAVE_D3D9
-    vpDisplayD3D display[3];
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK display[3];
-#endif
+    vpImage<vpRGBa> Iint(480, 640, vpRGBa(255));
+    vpImage<vpRGBa> Iext1(480, 640, vpRGBa(255));
+    vpImage<vpRGBa> Iext2(480, 640, vpRGBa(255));
 
     if (opt_display) {
       // Display size is automatically defined by the image (I) size
-      display[0].init(Iint, 100, 100, "The internal view");
-      display[1].init(Iext1, 100, 100, "The first external view");
-      display[2].init(Iext2, 100, 100, "The second external view");
+      display[0]->init(Iint, 100, 100, "The internal view");
+      display[1]->init(Iext1, 100, 100, "The first external view");
+      display[2]->init(Iext2, 100, 100, "The second external view");
       vpDisplay::setWindowPosition(Iint, 0, 0);
       vpDisplay::setWindowPosition(Iext1, 750, 0);
       vpDisplay::setWindowPosition(Iext2, 0, 550);
@@ -257,7 +256,7 @@ int main(int argc, const char **argv)
       vpDisplay::flush(Iext2);
     }
 
-    vpPlot *plotter = NULL;
+    vpPlot *plotter = nullptr;
 
     vpServo task;
     vpSimulatorCamera robot;
@@ -425,8 +424,7 @@ int main(int argc, const char **argv)
       robot.setVelocity(vpRobot::CAMERA_FRAME, v);
       sim.setCameraPositionRelObj(cMo);
 
-      // Compute the position of the external view which is fixed in the
-      // object frame
+      // Compute the position of the external view which is fixed in the object frame
       camoMf.buildFrom(0, 0.0, 2.5, 0, vpMath::rad(150), 0);
       camoMf = camoMf * (sim.get_fMo().inverse());
 
@@ -476,7 +474,7 @@ int main(int argc, const char **argv)
       std::cout << "|| s - s* || = " << (task.getError()).sumSquare() << std::endl;
     }
 
-    if (opt_plot && plotter != NULL) {
+    if (opt_plot && plotter != nullptr) {
       vpDisplay::display(Iint);
       sim.getInternalImage(Iint);
       vpDisplay::displayFrame(Iint, cMo, camera, 0.2, vpColor::none);
@@ -491,11 +489,20 @@ int main(int argc, const char **argv)
     }
 
     task.print();
-    return EXIT_SUCCESS;
-  } catch (const vpException &e) {
-    std::cout << "Catch an exception: " << e << std::endl;
-    return EXIT_FAILURE;
+    exit_status = EXIT_SUCCESS;
   }
+  catch (const vpException &e) {
+    std::cout << "Catch an exception: " << e << std::endl;
+    exit_status = EXIT_FAILURE;
+  }
+
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+    delete display[i];
+  }
+#endif
+
+  return exit_status;
 }
 #elif !(defined(VISP_HAVE_LAPACK) || defined(VISP_HAVE_EIGEN3) || defined(VISP_HAVE_OPENCV))
 int main()
@@ -507,7 +514,7 @@ int main()
 int main()
 {
   std::cout << "You do not have X11, or GDI (Graphical Device Interface), or GTK functionalities to display images..."
-            << std::endl;
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

@@ -5,8 +5,8 @@
   robot equipped with a camera able to move along the pan axis. The current
   visual features that are used are s = (x, log(Z/Z*)). The desired one are s*
   = (x*, 0), with:
-  - x the abscisse of the point measured at each iteration
-  - x* the desired abscisse position of the point (x* = 0)
+  - x the abscise of the point measured at each iteration
+  - x* the desired abscise position of the point (x* = 0)
   - Z the depth of the point measured at each iteration
   - Z* the desired depth of the point equal to the initial one.
 
@@ -19,6 +19,7 @@
   */
 #include <iostream>
 
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpVelocityTwistMatrix.h>
 #include <visp3/gui/vpPlot.h>
@@ -30,6 +31,9 @@
 
 int main()
 {
+#if defined(ENABLE_VISP_NAMESPACE)
+  using namespace VISP_NAMESPACE_NAME;
+#endif
   try {
     // Set the position the camera has to reach
     vpHomogeneousMatrix cdMo;
@@ -164,7 +168,8 @@ int main()
 
     // Kill the servo task
     task.print();
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
   }
 }

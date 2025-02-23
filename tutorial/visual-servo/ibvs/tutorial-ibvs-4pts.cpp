@@ -1,10 +1,15 @@
 /*! \example tutorial-ibvs-4pts.cpp */
+#include <visp3/core/vpConfig.h>
 #include <visp3/robot/vpSimulatorCamera.h>
 #include <visp3/visual_features/vpFeatureBuilder.h>
 #include <visp3/vs/vpServo.h>
 
 int main()
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
   try {
     vpHomogeneousMatrix cdMo(0, 0, 0.75, 0, 0, 0);
     vpHomogeneousMatrix cMo(0.15, -0.1, 1., vpMath::rad(10), vpMath::rad(-10), vpMath::rad(50));
@@ -35,6 +40,7 @@ int main()
     robot.getPosition(wMc);
     wMo = wMc * cMo;
 
+    std::cout << "Start visual-servoing loop..." << std::endl;
     for (unsigned int iter = 0; iter < 150; iter++) {
       robot.getPosition(wMc);
       cMo = wMc.inverse() * wMo;
@@ -45,7 +51,10 @@ int main()
       vpColVector v = task.computeControlLaw();
       robot.setVelocity(vpRobot::CAMERA_FRAME, v);
     }
-  } catch (const vpException &e) {
+
+    std::cout << "Stop visual-servoing loop" << std::endl;
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
   }
 }

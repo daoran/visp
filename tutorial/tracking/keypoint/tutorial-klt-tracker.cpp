@@ -1,4 +1,12 @@
 //! \example tutorial-klt-tracker.cpp
+#include <iostream>
+
+#include <visp3/core/vpConfig.h>
+
+//! [Check 3rd party]
+#if defined(HAVE_OPENCV_HIGHGUI) && defined(HAVE_OPENCV_IMGPROC) && defined(HAVE_OPENCV_VIDEO) && defined(HAVE_OPENCV_VIDEOIO)
+//! [Check 3rd party]
+
 //! [Include]
 #include <visp3/core/vpImageConvert.h>
 #include <visp3/gui/vpDisplayOpenCV.h>
@@ -8,24 +16,28 @@
 
 int main(int argc, const char *argv[])
 {
-//! [Check 3rd party]
-#ifdef VISP_HAVE_OPENCV
-  //! [Check 3rd party]
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
   try {
     std::string opt_videoname = "video-postcard.mp4";
     bool opt_init_by_click = false;
     unsigned int opt_subsample = 1;
-    for (int i = 0; i < argc; i++) {
-      if (std::string(argv[i]) == "--videoname")
-        opt_videoname = std::string(argv[i + 1]);
-      else if (std::string(argv[i]) == "--init-by-click")
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) == "--videoname") {
+        opt_videoname = std::string(argv[++i]);
+      }
+      else if (std::string(argv[i]) == "--init-by-click") {
         opt_init_by_click = true;
-      else if (std::string(argv[i]) == "--subsample")
-        opt_subsample = static_cast<unsigned int>(std::atoi(argv[i + 1]));
+      }
+      else if (std::string(argv[i]) == "--subsample") {
+        opt_subsample = static_cast<unsigned int>(std::atoi(argv[++i]));
+      }
       else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
         std::cout << "Usage: " << argv[0]
-                  << " [--videoname <video name>] [--subsample <scale factor>] [--init-by-click]"
-                  << " [--help] [-h]" << std::endl;
+          << " [--videoname <video name>] [--subsample <scale factor>] [--init-by-click]"
+          << " [--help] [-h]" << std::endl;
         return EXIT_SUCCESS;
       }
     }
@@ -42,11 +54,7 @@ int main(int argc, const char *argv[])
     //! [Acquire]
 
     //! [Convert to OpenCV image]
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-    IplImage *cvI = NULL;
-#else
     cv::Mat cvI;
-#endif
     vpImageConvert::convert(I, cvI);
     //! [Convert to OpenCV image]
 
@@ -73,11 +81,7 @@ int main(int argc, const char *argv[])
     // Initialise the tracking
     if (opt_init_by_click) {
       vpMouseButton::vpMouseButtonType button = vpMouseButton::button1;
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-      std::vector<CvPoint2D32f> feature;
-#else
       std::vector<cv::Point2f> feature;
-#endif
       vpImagePoint ip;
       do {
         vpDisplay::displayText(I, 10, 10, "Left click to select a point, right to start tracking", vpColor::red);
@@ -90,12 +94,9 @@ int main(int argc, const char *argv[])
         vpDisplay::flush(I);
         vpTime::wait(20);
       } while (button != vpMouseButton::button3);
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-      tracker.initTracking(cvI, &feature[0], feature.size());
-#else
       tracker.initTracking(cvI, feature);
-#endif
-    } else {
+    }
+    else {
       //! [Init tracker]
       tracker.initTracking(cvI);
       //! [Init tracker]
@@ -116,11 +117,7 @@ int main(int argc, const char *argv[])
 
       if (opt_init_by_click && reader.getFrameIndex() == reader.getFirstFrameIndex() + 20) {
         vpMouseButton::vpMouseButtonType button = vpMouseButton::button1;
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-        std::vector<CvPoint2D32f> feature;
-#else
         std::vector<cv::Point2f> feature;
-#endif
         vpImagePoint ip;
         do {
           vpDisplay::displayText(I, 10, 10, "Left click to select a point, right to start tracking", vpColor::red);
@@ -133,11 +130,7 @@ int main(int argc, const char *argv[])
           vpDisplay::flush(I);
           vpTime::wait(20);
         } while (button != vpMouseButton::button3);
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-        tracker.initTracking(cvI, &feature[0], feature.size());
-#else
         tracker.initTracking(cvI, feature);
-#endif
       }
 
       tracker.track(cvI);
@@ -157,21 +150,31 @@ int main(int argc, const char *argv[])
 
     //! [Wait click]
     vpDisplay::getClick(I);
-//! [Wait click]
-
-//! [Release IplImage]
-#if (VISP_HAVE_OPENCV_VERSION < 0x020408)
-    cvReleaseImage(&cvI);
-#endif
-    //! [Release IplImage]
-
-  } catch (const vpException &e) {
+    //! [Wait click]
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
     return EXIT_FAILURE;
   }
-#else
-  (void)argc;
-  (void)argv;
-#endif
   return EXIT_SUCCESS;
 }
+
+#else
+
+int main()
+{
+#if !defined(HAVE_OPENCV_HIGHGUI)
+  std::cout << "This tutorial needs OpenCV highgui module that is missing." << std::endl;
+#endif
+#if !defined(HAVE_OPENCV_IMGPROC)
+  std::cout << "This tutorial needs OpenCV imgproc module that is missing." << std::endl;
+#endif
+#if !defined(HAVE_OPENCV_VIDEO)
+  std::cout << "This tutorial needs OpenCV video module that is missing." << std::endl;
+#endif
+#if !defined(HAVE_OPENCV_VIDEOIO)
+  std::cout << "This tutorial needs OpenCV videoio module that is missing." << std::endl;
+#endif
+}
+
+#endif

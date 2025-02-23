@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,10 +31,7 @@
  * Description:
  * Demonstration of the wireframe simulator
  *
- * Authors:
- * Nicolas Melchior
- *
- *****************************************************************************/
+*****************************************************************************/
 
 /*!
   \example wireframeSimulator.cpp
@@ -45,15 +42,12 @@
 #include <stdlib.h>
 
 #include <visp3/core/vpCameraParameters.h>
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpMath.h>
-#include <visp3/gui/vpDisplayD3D.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpParseArgv.h>
 #include <visp3/robot/vpWireFrameSimulator.h>
@@ -61,6 +55,10 @@
 #define GETOPTARGS "cdh"
 
 #ifdef VISP_HAVE_DISPLAY
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void usage(const char *name, const char *badparam);
 bool getOptions(int argc, const char **argv, bool &display, bool &click);
@@ -125,7 +123,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click)
       display = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
       break;
 
@@ -138,7 +136,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -149,6 +147,15 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click)
 
 int main(int argc, const char **argv)
 {
+  const unsigned int NB_DISPLAYS = 3;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display[NB_DISPLAYS];
+#else
+  vpDisplay *display[NB_DISPLAYS];
+  for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+    display[i] = nullptr;
+  }
+#endif
   try {
     bool opt_display = true;
     bool opt_click = true;
@@ -162,30 +169,24 @@ int main(int argc, const char **argv)
     Three vpImage are created : one for the main camera and the others
     for two external cameras
   */
-    vpImage<vpRGBa> Iint(480, 640, 255);
-    vpImage<vpRGBa> Iext1(480, 640, 255);
-    vpImage<vpRGBa> Iext2(480, 640, 255);
+    vpImage<vpRGBa> Iint(480, 640, vpRGBa(255));
+    vpImage<vpRGBa> Iext1(480, 640, vpRGBa(255));
+    vpImage<vpRGBa> Iext2(480, 640, vpRGBa(255));
 
 /*
 Create a display for each different cameras.
 */
-#if defined VISP_HAVE_X11
-    vpDisplayX display[3];
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV display[3];
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI display[3];
-#elif defined VISP_HAVE_D3D9
-    vpDisplayD3D display[3];
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK display[3];
-#endif
-
     if (opt_display) {
       // Display size is automatically defined by the image (I) size
-      display[0].init(Iint, 100, 100, "The internal view");
-      display[1].init(Iext1, 100, 100, "The first external view");
-      display[2].init(Iext2, 100, 100, "The second external view");
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+      display[0] = vpDisplayFactory::createDisplay(Iint, 100, 100, "The internal view");
+      display[1] = vpDisplayFactory::createDisplay(Iext1, 100, 100, "The first external view");
+      display[2] = vpDisplayFactory::createDisplay(Iext2, 100, 100, "The second external view");
+#else
+      display[0] = vpDisplayFactory::allocateDisplay(Iint, 100, 100, "The internal view");
+      display[1] = vpDisplayFactory::allocateDisplay(Iext1, 100, 100, "The first external view");
+      display[2] = vpDisplayFactory::allocateDisplay(Iext2, 100, 100, "The second external view");
+#endif
       vpDisplay::setWindowPosition(Iint, 0, 0);
       vpDisplay::setWindowPosition(Iext1, 700, 0);
       vpDisplay::setWindowPosition(Iext2, 0, 550);
@@ -268,17 +269,17 @@ Create a display for each different cameras.
 
     std::cout << std::endl;
     std::cout << "Here are presented the effect of the basic functions of "
-                 "the simulator"
-              << std::endl;
+      "the simulator"
+      << std::endl;
     std::cout << std::endl;
 
     if (opt_display) {
       if (opt_click) {
         std::cout << "Click on the internal view window to continue. the "
-                     "object will move. The external cameras are fixed. The "
-                     "main camera moves too because the homogeneous matrix "
-                     "cMo didn't change."
-                  << std::endl;
+          "object will move. The external cameras are fixed. The "
+          "main camera moves too because the homogeneous matrix "
+          "cMo didn't change."
+          << std::endl;
         vpDisplay::getClick(Iint);
       }
       vpDisplay::display(Iint);
@@ -316,9 +317,9 @@ Create a display for each different cameras.
     }
     std::cout << std::endl;
     std::cout << "Now you can move the main external camera. Click inside "
-                 "the corresponding window with one of the three buttons of "
-                 "your mouse and move the pointer."
-              << std::endl;
+      "the corresponding window with one of the three buttons of "
+      "your mouse and move the pointer."
+      << std::endl;
     std::cout << std::endl;
     std::cout << "Click on the internal view window when you are finished" << std::endl;
 
@@ -337,13 +338,28 @@ Create a display for each different cameras.
 
     std::cout << std::endl;
     std::cout << "You have seen the main capabilities of the simulator. "
-                 "Other specific functionalities are available. Please "
-                 "refers to the html documentation to access the list of all "
-                 "functions"
-              << std::endl;
+      "Other specific functionalities are available. Please "
+      "refers to the html documentation to access the list of all "
+      "functions"
+      << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+      if (display[i] != nullptr) {
+        delete display[i];
+      }
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    for (unsigned int i = 0; i < NB_DISPLAYS; ++i) {
+      if (display[i] != nullptr) {
+        delete display[i];
+      }
+    }
+#endif
     return EXIT_SUCCESS;
   }
 }
@@ -351,7 +367,7 @@ Create a display for each different cameras.
 int main()
 {
   std::cout << "You do not have X11, or GDI (Graphical Device Interface), or GTK functionalities to display images..."
-            << std::endl;
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

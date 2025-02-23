@@ -533,7 +533,7 @@ class CppHeaderParser(object):
                             eqpos = a.find("CV_WRAP_DEFAULT")
                             if eqpos >= 0:
                                 defval, pos3 = self.get_macro_arg(a, eqpos)
-                    if defval == "NULL":
+                    if defval == "nullptr":
                         defval = "0"
                     if eqpos >= 0:
                         a = a[:eqpos].strip()
@@ -867,6 +867,9 @@ class CppHeaderParser(object):
                     break
 
                 decl = None
+                if "BEGIN_VISP_NAMESPACE" in stmt:
+                  stmt = stmt.replace("BEGIN_VISP_NAMESPACE", "")
+                  stmt = stmt.strip()
                 if stack_top[self.PROCESS_FLAG]:
                     # even if stack_top[PUBLIC_SECTION] is False, we still try to process the statement,
                     # since it can start with "public:"
@@ -881,6 +884,9 @@ class CppHeaderParser(object):
                         docstring = ""
                     if stmt_type == "namespace":
                         chunks = [block[1] for block in self.block_stack if block[0] == 'namespace'] + [name]
+                        for i in range(len(chunks)):
+                            if chunks[i] == "VISP_NAMESPACE_NAME":
+                                chunks[i] = "visp"
                         self.namespaces.add('.'.join(chunks))
                 else:
                     stmt_type, name, parse_flag = "block", "", False

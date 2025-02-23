@@ -1,7 +1,7 @@
 #############################################################################
 #
 # ViSP, open source Visual Servoing Platform software.
-# Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+# Copyright (C) 2005 - 2024 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GPL, please contact Inria about acquiring a ViSP Professional
 # Edition License.
 #
-# See http://visp.inria.fr for more information.
+# See https://visp.inria.fr for more information.
 #
 # This software was developed at:
 # Inria Rennes - Bretagne Atlantique
@@ -31,31 +31,76 @@
 # Description:
 # ViSP configuration file.
 #
-# Authors:
-# Fabien Spindler
-#
 #############################################################################
 
 # Add optional 3rd parties
 set(opt_incs "")
+set(opt_system_incs "")
+
 set(opt_libs "")
 
 if(USE_OGRE)
   # With Ubuntu 20.04, OGRE_LIBRARIES contains Boost::thread that cannot
   # be exported as is on pain of producing a build issue when ViSP is used
   # as a 3rd party. That's why here we get its imported location.
+
+  if(NOT OGRE_VERSION)
+    set(OGRE_VERSION "${OGRE_VERSION_MAJOR}.${OGRE_VERSION_MINOR}.${OGRE_VERSION_PATCH}")
+  endif()
+
+  if(${OGRE_VERSION_MAJOR} EQUAL 1 AND (${OGRE_VERSION_MINOR} EQUAL 10 OR ${OGRE_VERSION_MINOR} EQUAL 11))
+    find_package(Boost REQUIRED COMPONENTS thread)
+    link_directories(${OGRE_LIBRARY_DIRS})
+    if(NOT(TARGET OgreMain))
+      find_library(OgreMainSEARCH NAMES OgreMain PATHS ${OGRE_LIBRARY_DIRS})
+      add_library(OgreMain SHARED IMPORTED)
+      set_property(TARGET OgreMain PROPERTY IMPORTED_LOCATION ${OgreMainSEARCH})
+    endif()
+  endif()
+
+  if(NOT(${OGRE_VERSION_MAJOR} EQUAL 1 AND ${OGRE_VERSION_MINOR} LESS_EQUAL 9))
+    foreach(component ${OGRE_COMPONENTS})
+      set(ogre_target "OGRE_${component}_LIBRARIES")
+      foreach(ogre_libray ${${ogre_target}})
+        if(TARGET ${ogre_libray})
+          get_target_property(inc_dirs ${ogre_libray} INTERFACE_INCLUDE_DIRECTORIES)
+          if(inc_dirs)
+            list(APPEND opt_system_incs ${inc_dirs})
+          endif()
+          ## The following lines are not needed for Ogre 1.9 and 1.12, but might be useful for compiled versions of Ogre
+          # get_target_property(interface_libs ${ogre_libray} INTERFACE_LINK_LIBRARIES)
+          # if(interface_libs)
+          #   list(APPEND opt_libs ${interface_libs})
+          # endif()
+        endif()
+        if(${OGRE_VERSION_MAJOR} EQUAL 1 AND (${OGRE_VERSION_MINOR} EQUAL 10 OR ${OGRE_VERSION_MINOR} EQUAL 11))
+          unset(MATCHED)
+          string(REGEX MATCH ".*O[gG][rR][eE].*" MATCHED ${ogre_libray})
+          if (NOT MATCHED)
+              continue()
+          endif()
+          if(NOT(TARGET ${ogre_libray}))
+            find_library(${ogre_libray}SEARCH NAMES ${ogre_libray} PATHS ${OGRE_LIBRARY_DIRS})
+            add_library(${ogre_libray} SHARED IMPORTED)
+            set_property(TARGET ${ogre_libray} PROPERTY IMPORTED_LOCATION ${${ogre_libray}SEARCH})
+          endif()
+        endif()
+      endforeach()
+    endforeach()
+  endif()
+
   vp_filter_libraries_with_imported_location(OGRE_LIBRARIES)
+
   mark_as_advanced(OGRE_SAMPLES_INCLUDEPATH)
   #message("OGRE_SAMPLES_INCLUDEPATH: ${OGRE_SAMPLES_INCLUDEPATH}")
   if(OGRE_SAMPLES_INCLUDEPATH)
-    list(APPEND opt_incs ${OGRE_SAMPLES_INCLUDEPATH})
+    list(APPEND opt_system_incs ${OGRE_SAMPLES_INCLUDEPATH})
   endif()
 
   # hack to fix possible presence of NOTFOUND in OGRE_INCLUDE_DIRS
-  #message("OGRE_INCLUDE_DIRS: ${OGRE_INCLUDE_DIRS}")
   foreach(inc_ ${OGRE_INCLUDE_DIRS})
     if(NOT ${inc_} MATCHES "NOTFOUND")
-      list(APPEND opt_incs ${inc_})
+      list(APPEND opt_system_incs ${inc_})
     endif()
   endforeach()
   if(WIN32)
@@ -72,7 +117,7 @@ if(USE_OGRE)
 endif(USE_OGRE)
 
 if(USE_OIS AND USE_OGRE)
-  list(APPEND opt_incs ${OIS_INCLUDE_DIR})
+  list(APPEND opt_system_incs ${OIS_INCLUDE_DIR})
   list(APPEND opt_libs ${OIS_LIBRARIES})
   if(APPLE)
     # With Ogre 1.7.4 and 1.8.1 to be able to link with libOIS.a, Cocoa framework is requested.
@@ -85,11 +130,11 @@ if(USE_COIN3D)
   if(WIN32)
     add_definitions("-DCOIN_DLL")
   endif()
-  list(APPEND opt_incs ${COIN3D_INCLUDE_DIRS})
+  list(APPEND opt_system_incs ${COIN3D_INCLUDE_DIRS})
   # On OSX cmake 2.8 found OpenGL but OPENGL_INCLUDE_DIR was set to NOT_FOUND
   # We add a test to be sure that the OPENGL vars exist.
   if(OPENGL_INCLUDE_DIR)
-    list(APPEND opt_incs ${OPENGL_INCLUDE_DIR})
+    list(APPEND opt_system_incs ${OPENGL_INCLUDE_DIR})
   endif()
   if(OPENGL_LIBRARIES)
     list(APPEND opt_libs ${OPENGL_LIBRARIES})
@@ -98,7 +143,7 @@ if(USE_COIN3D)
   list(APPEND opt_libs ${COIN3D_LIBRARIES})
   if(USE_SOWIN)
     add_definitions("-DSOWIN_DLL")
-    list(APPEND opt_incs ${SOWIN_INCLUDE_DIRS})
+    list(APPEND opt_system_incs ${SOWIN_INCLUDE_DIRS})
     list(APPEND opt_libs ${SOWIN_LIBRARIES})
   endif()
 
@@ -111,7 +156,7 @@ if(USE_COIN3D)
           foreach(imp_config_ ${config_})
             get_target_property(lib_property_${imp_config_}_ ${lib_} IMPORTED_LOCATION_${imp_config_})
             get_target_property(lib_property_inc ${lib_} INTERFACE_INCLUDE_DIRECTORIES)
-            list(APPEND opt_incs ${lib_property_inc})
+            list(APPEND opt_system_incs ${lib_property_inc})
             # Under Unix, there is no specific suffix for libraries.
             # Under Windows, we add the "optimized", "debug" specific keywords
             if(WIN32 AND EXISTS "${lib_property_${imp_config_}_}" AND "${imp_config_}" MATCHES "RELEASE") # also valid for RELEASEWITHDEBINFO
@@ -128,12 +173,12 @@ if(USE_COIN3D)
     endforeach()
     vp_list_unique(SoQt_incs)
     vp_list_unique(SoQt_libs)
-    list(APPEND opt_incs ${SoQt_incs})
+    list(APPEND opt_system_incs ${SoQt_incs})
     list(APPEND opt_libs ${SoQt_libs})
   elseif(USE_SOQT AND USE_QT)
-    list(APPEND opt_incs ${SOQT_INCLUDE_DIRS})
-    list(APPEND opt_incs ${QT_INCLUDE_DIR})
-    list(APPEND opt_incs ${QT_INCLUDES})
+    list(APPEND opt_system_incs ${SOQT_INCLUDE_DIRS})
+    list(APPEND opt_system_incs ${QT_INCLUDE_DIR})
+    list(APPEND opt_system_incs ${QT_INCLUDES})
     list(APPEND opt_libs ${SOQT_LIBRARIES})
     if(WIN32)
       add_definitions("-DSOQT_DLL")
@@ -176,13 +221,30 @@ if(USE_COIN3D)
   endif()
 endif()
 
-vp_add_module(ar visp_core OPTIONAL visp_io)
-vp_glob_module_sources()
-
-if(USE_OGRE)
-  # Add specific build flag to turn off warnings coming from libogre and libois 3rd party
-  vp_set_source_file_compile_flag(src/ogre-simulator/vpAROgre.cpp -Wno-unused-parameter -Wno-unused-but-set-parameter -Wno-overloaded-virtual -Wno-float-equal -Wno-deprecated-copy -Wno-register)
+if(USE_PANDA3D)
+  if(Panda3D_INCLUDE_DIRS)
+    # Add Panda3D include dirs as system to avoid warnings due to Panda3D headers
+    list(APPEND opt_system_incs ${Panda3D_INCLUDE_DIRS})
+  endif()
+  if(Panda3D_LIBRARIES)
+  list(APPEND opt_libs ${Panda3D_LIBRARIES})
+  endif()
 endif()
 
-vp_module_include_directories(${opt_incs})
+vp_add_module(ar visp_core)
+vp_glob_module_sources()
+
+vp_module_include_directories(${opt_incs} SYSTEM ${opt_system_incs})
 vp_create_module(${opt_libs})
+
+
+set(opt_test_incs "")
+set(opt_test_libs "")
+
+if(WITH_CATCH2)
+  # catch2 is private
+  list(APPEND opt_test_incs ${CATCH2_INCLUDE_DIRS})
+  list(APPEND opt_test_libs ${CATCH2_LIBRARIES})
+endif()
+
+vp_add_tests(DEPENDS_ON visp_core PRIVATE_INCLUDE_DIRS ${opt_test_incs} PRIVATE_LIBRARIES ${opt_test_libs})

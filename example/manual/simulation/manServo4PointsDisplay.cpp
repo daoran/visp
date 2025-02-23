@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,11 +31,7 @@
  * Description:
  * Simulation of a visual servoing with display.
  *
- * Authors:
- * Eric Marchand
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 
 /*!
   \file manServo4PointsDisplay.cpp
@@ -50,16 +46,13 @@
 #include <visp3/core/vpConfig.h>
 #include <visp3/core/vpDebug.h>
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV)
+#if defined(VISP_HAVE_DISPLAY)
 
 #include <visp3/core/vpCameraParameters.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpImageConvert.h>
 #include <visp3/core/vpTime.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpIoTools.h>
@@ -73,6 +66,15 @@
 
 int main()
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> disp = vpDisplayFactory::createDisplay();
+#else
+  vpDisplay *disp = vpDisplayFactory::allocateDisplay();
+#endif
   try {
     //////////////////////////////////////////
     // sets the initial camera location
@@ -95,19 +97,9 @@ int main()
     unsigned int width = 480;
     vpImage<unsigned char> I(height, width);
 
-// Display initialization
-#if defined(VISP_HAVE_X11)
-    vpDisplayX disp;
-#elif defined(VISP_HAVE_GTK)
-    vpDisplayGTK disp;
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI disp;
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV disp;
-#endif
-
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV)
-    disp.init(I, 100, 100, "Simulation display");
+    // Display initialization
+#if defined(VISP_HAVE_DISPLAY)
+    disp->init(I, 100, 100, "Simulation display");
 #endif
 
     ////////////////////////////////////////
@@ -208,9 +200,20 @@ int main()
       // Wait 40 ms
       vpTime::wait(t, 40);
     }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (disp != nullptr) {
+      delete disp;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (disp != nullptr) {
+      delete disp;
+    }
+#endif
     return EXIT_FAILURE;
   }
 }
@@ -219,12 +222,12 @@ int main()
 int main()
 {
   std::cout
-      << "You do not have X11, GTK, or OpenCV, or GDI (Graphical Device Interface) functionalities to display images..."
-      << std::endl;
+    << "You do not have X11, GTK, or OpenCV, or GDI (Graphical Device Interface) functionalities to display images..."
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;
   std::cout << "- Install GDI, configure again ViSP using cmake and build again this example" << std::endl;
   return EXIT_SUCCESS;
-}
+  }
 #endif

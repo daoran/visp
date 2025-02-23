@@ -9,6 +9,11 @@
 
 int main()
 {
+
+#if defined(ENABLE_VISP_NAMESPACE)
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
   try {
     vpHomogeneousMatrix cdMo(0, 0, 0.75, 0, 0, 0);
     vpHomogeneousMatrix cMo(0.15, -0.1, 1., vpMath::rad(10), vpMath::rad(-10), vpMath::rad(50));
@@ -53,9 +58,14 @@ int main()
     // Add an optional point light source
     Ogre::Light *light = ogre.getSceneManager()->createLight();
     light->setDiffuseColour(1, 1, 1);  // scaled RGB values
-    light->setSpecularColour(1, 1, 1); // scaled RGB values
-    light->setPosition((Ogre::Real)cdMo[0][3], (Ogre::Real)cdMo[1][3], (Ogre::Real)(-cdMo[2][3]));
     light->setType(Ogre::Light::LT_POINT);
+#if (VISP_HAVE_OGRE_VERSION < (1 << 16 | 10 << 8 | 0))
+    light->setPosition((Ogre::Real)cdMo[0][3], (Ogre::Real)cdMo[1][3], (Ogre::Real)(-cdMo[2][3]));
+#else
+    Ogre::SceneNode *spotLightNode = ogre.getSceneManager()->getRootSceneNode()->createChildSceneNode();
+    spotLightNode->attachObject(light);
+    spotLightNode->setPosition((Ogre::Real)cdMo[0][3], (Ogre::Real)cdMo[1][3], (Ogre::Real)(-cdMo[2][3]));
+#endif
 #endif
 
     vpServo task;
@@ -93,9 +103,11 @@ int main()
       robot.setVelocity(vpRobot::CAMERA_FRAME, v);
       vpTime::wait(robot.getSamplingTime() * 1000);
     }
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
-  } catch (...) {
+  }
+  catch (...) {
     std::cout << "Catch an exception " << std::endl;
   }
 }

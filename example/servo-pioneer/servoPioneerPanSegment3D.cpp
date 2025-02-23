@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,10 +31,7 @@
  * Description:
  * IBVS on Pioneer P3DX mobile platform
  *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
@@ -44,12 +41,11 @@
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpVelocityTwistMatrix.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayX.h> // Should be included after vpRobotPioneer.h
 #include <visp3/gui/vpPlot.h>
 #include <visp3/robot/vpPioneerPan.h>
 #include <visp3/robot/vpRobotBiclops.h>
 #include <visp3/robot/vpRobotPioneer.h> // Include first to avoid build issues with Status, None, isfinite
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/sensor/vp1394CMUGrabber.h>
 #include <visp3/sensor/vp1394TwoGrabber.h>
 #include <visp3/sensor/vpV4l2Grabber.h>
@@ -68,7 +64,7 @@
   servoing with respect to a segment. The segment consists in two horizontal
   dots. The current visual features that are used are \f${\bf s} = (x_n, l_n,
   \alpha)\f$. The desired one are \f${\bf s^*} = (0, l_n*, 0)\f$, with:
-  - \f$x_n\f$ the normalized abscisse of the point corresponding to segment
+  - \f$x_n\f$ the normalized abscise of the point corresponding to segment
   - \f$l_n\f$ the normalized segment length
   - \f$\alpha\f$ the segment orientation.
 
@@ -83,8 +79,17 @@
 #if defined(VISP_HAVE_PIONEER) && defined(VISP_HAVE_BICLOPS)
 int main(int argc, char **argv)
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
 #if defined(VISP_HAVE_DC1394) || defined(VISP_HAVE_V4L2) || defined(VISP_HAVE_CMU1394)
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)
+#if defined(VISP_HAVE_DISPLAY)
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
   try {
     vpImage<unsigned char> I; // Create a gray level image container
     double lambda = 0.1;
@@ -106,7 +111,7 @@ int main(int argc, char **argv)
     double qm_pan = 0; // Measured pan position (tilt is not handled in that example)
 
 #ifdef USE_REAL_ROBOT
-    // Initialize the biclops head
+    // Initialize the Biclops head
 
     vpRobotBiclops biclops("/usr/share/BiclopsDefault.cfg");
     biclops.setDenavitHartenbergModel(vpBiclops::DH1);
@@ -161,7 +166,7 @@ int main(int argc, char **argv)
 #endif
 
     vpPioneerPan robot_pan; // Generic robot that computes the velocities for
-                            // the pioneer and the biclops head
+                            // the pioneer and the Biclops head
 
     // Camera parameters. In this experiment we don't need a precise
     // calibration of the camera
@@ -201,10 +206,10 @@ int main(int argc, char **argv)
     g.acquire(I);
 
 // Create an image viewer
-#if defined(VISP_HAVE_X11)
-    vpDisplayX d(I, 10, 10, "Current frame");
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI d(I, 10, 10, "Current frame");
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display = vpDisplayFactory::createDisplay(I, 10, 10, "Current frame");
+#else
+    display = vpDisplayFactory::allocateDisplay(I, 10, 10, "Current frame");
 #endif
     vpDisplay::display(I);
     vpDisplay::flush(I);
@@ -269,7 +274,7 @@ int main(int argc, char **argv)
 
     // Use here a feature segment builder
     vpFeatureSegment s_segment(normalized),
-        s_segment_d(normalized); // From the segment feature we use only alpha
+      s_segment_d(normalized); // From the segment feature we use only alpha
     vpFeatureBuilder::create(s_segment, cam, dot[0], dot[1]);
     s_segment.setZ1(Z[0]);
     s_segment.setZ2(Z[1]);
@@ -381,8 +386,8 @@ int main(int argc, char **argv)
         v_biclops[1] = 0;
 
         std::cout << "Send velocity to the pionner: " << v_pioneer[0] << " m/s " << vpMath::deg(v_pioneer[1])
-                  << " deg/s" << std::endl;
-        std::cout << "Send velocity to the biclops head: " << vpMath::deg(v_biclops[0]) << " deg/s" << std::endl;
+          << " deg/s" << std::endl;
+        std::cout << "Send velocity to the Biclops head: " << vpMath::deg(v_biclops[0]) << " deg/s" << std::endl;
 
         pioneer.setVelocity(vpRobot::REFERENCE_FRAME, v_pioneer);
         biclops.setVelocity(vpRobot::ARTICULAR_FRAME, v_biclops);
@@ -400,7 +405,8 @@ int main(int argc, char **argv)
         iter++;
         // break;
       }
-    } catch (...) {
+    }
+    catch (...) {
     }
 
 #ifdef USE_REAL_ROBOT
@@ -413,9 +419,20 @@ int main(int argc, char **argv)
 
     // Kill the servo task
     task.print();
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
 #endif

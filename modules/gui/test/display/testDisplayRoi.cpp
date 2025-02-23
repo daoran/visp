@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,11 +29,7 @@
  *
  * Description:
  * Test for image roi display.
- *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+ */
 
 /*!
   \example testDisplayRoi.cpp
@@ -57,6 +52,10 @@
 // List of allowed command line options
 #define GETOPTARGS "cdh"
 
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
+
 void usage(const char *name, const char *badparam);
 bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display);
 
@@ -72,7 +71,7 @@ void usage(const char *name, const char *badparam)
 {
   fprintf(stdout, "\n\
 Read an image on the disk, display it using X11, display some\n\
-features (line, circle, caracters) in overlay and finaly write \n\
+features (line, circle, characters) in overlay and finally write \n\
 the image and the overlayed features in an image on the disk.\n\
 \n\
 SYNOPSIS\n\
@@ -83,7 +82,7 @@ SYNOPSIS\n\
 OPTIONS:                                               Default\n\
   -c\n\
      Disable the mouse click. Useful to automate the \n\
-     execution of this program without humain intervention.\n\
+     execution of this program without human intervention.\n\
 \n\
   -d                                             \n\
      Disable the image display. This can be useful \n\
@@ -128,7 +127,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
       display = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
       break;
 
@@ -141,7 +140,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -173,14 +172,14 @@ int main(int argc, const char **argv)
     vpDisplayGDI d;
 #elif defined(VISP_HAVE_D3D9)
     vpDisplayD3D d;
-#elif defined(VISP_HAVE_OPENCV)
+#elif defined(HAVE_OPENCV_HIGHGUI)
     vpDisplayOpenCV d;
 #endif
     d.init(I);
     vpDisplay::display(I);
     vpDisplay::flush(I);
 
-    I = 0;
+    I = 0u;
 
     vpRect roi(I.getWidth() / 4, I.getHeight() / 4, I.getWidth() / 2, I.getHeight() / 2);
     vpDisplay::displayROI(I, roi);

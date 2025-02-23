@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,12 +30,7 @@
  * Description:
  * Pose object. A pose is a size 6 vector [t, tu]^T where tu is
  * a rotation vector (theta u representation) and t is a translation vector.
- *
- * Authors:
- * Eric Marchand
- * Fabien Spindler
- *
- *****************************************************************************/
+ */
 
 /*!
   \file vpPoseVector.cpp
@@ -47,12 +41,14 @@
 #include <assert.h>
 #include <sstream>
 
-#include <visp3/core/vpDebug.h>
 #include <visp3/core/vpException.h>
 #include <visp3/core/vpMath.h>
 #include <visp3/core/vpMatrixException.h>
 #include <visp3/core/vpPoseVector.h>
 
+BEGIN_VISP_NAMESPACE
+
+const unsigned int vpPoseVector::constr_value_6 = 6;
 /*!
 
   Default constructor that construct a 6 dimension pose vector \f$ [\bf t,
@@ -63,7 +59,7 @@
   The pose vector is initialized to zero.
 
 */
-vpPoseVector::vpPoseVector() : vpArray2D<double>(6, 1) {}
+vpPoseVector::vpPoseVector() : vpArray2D<double>(constr_value_6, 1) { }
 
 /*!
 
@@ -81,15 +77,21 @@ vpPoseVector::vpPoseVector() : vpArray2D<double>(6, 1) {}
 
 */
 vpPoseVector::vpPoseVector(double tx, double ty, double tz, double tux, double tuy, double tuz)
-  : vpArray2D<double>(6, 1)
+  : vpArray2D<double>(constr_value_6, 1)
 {
-  (*this)[0] = tx;
-  (*this)[1] = ty;
-  (*this)[2] = tz;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int index_3 = 3;
+  const unsigned int index_4 = 4;
+  const unsigned int index_5 = 5;
+  (*this)[index_0] = tx;
+  (*this)[index_1] = ty;
+  (*this)[index_2] = tz;
 
-  (*this)[3] = tux;
-  (*this)[4] = tuy;
-  (*this)[5] = tuz;
+  (*this)[index_3] = tux;
+  (*this)[index_4] = tuy;
+  (*this)[index_5] = tuz;
 }
 
 /*!
@@ -102,7 +104,7 @@ vpPoseVector::vpPoseVector(double tx, double ty, double tz, double tux, double t
   \param tu : \f$\theta \bf u\f$ rotation  vector.
 
 */
-vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpThetaUVector &tu) : vpArray2D<double>(6, 1)
+vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpThetaUVector &tu) : vpArray2D<double>(constr_value_6, 1)
 {
   buildFrom(tv, tu);
 }
@@ -119,7 +121,7 @@ vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpThetaUVector &
   u\f$ vector is extracted to initialise the pose vector.
 
 */
-vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpRotationMatrix &R) : vpArray2D<double>(6, 1)
+vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpRotationMatrix &R) : vpArray2D<double>(constr_value_6, 1)
 {
   buildFrom(tv, R);
 }
@@ -134,7 +136,7 @@ vpPoseVector::vpPoseVector(const vpTranslationVector &tv, const vpRotationMatrix
   initialize the pose vector.
 
 */
-vpPoseVector::vpPoseVector(const vpHomogeneousMatrix &M) : vpArray2D<double>(6, 1) { buildFrom(M); }
+vpPoseVector::vpPoseVector(const vpHomogeneousMatrix &M) : vpArray2D<double>(constr_value_6, 1) { buildFrom(M); }
 
 /*!
 
@@ -153,13 +155,19 @@ vpPoseVector::vpPoseVector(const vpHomogeneousMatrix &M) : vpArray2D<double>(6, 
 */
 void vpPoseVector::set(double tx, double ty, double tz, double tux, double tuy, double tuz)
 {
-  (*this)[0] = tx;
-  (*this)[1] = ty;
-  (*this)[2] = tz;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int index_3 = 3;
+  const unsigned int index_4 = 4;
+  const unsigned int index_5 = 5;
+  (*this)[index_0] = tx;
+  (*this)[index_1] = ty;
+  (*this)[index_2] = tz;
 
-  (*this)[3] = tux;
-  (*this)[4] = tuy;
-  (*this)[5] = tuz;
+  (*this)[index_3] = tux;
+  (*this)[index_4] = tuy;
+  (*this)[index_5] = tuz;
 }
 
 /*!
@@ -178,15 +186,21 @@ void vpPoseVector::set(double tx, double ty, double tz, double tux, double tuy, 
 
   \sa set()
 */
-vpPoseVector vpPoseVector::buildFrom(double tx, double ty, double tz, double tux, double tuy, double tuz)
+vpPoseVector &vpPoseVector::buildFrom(const double &tx, const double &ty, const double &tz, const double &tux, const double &tuy, const double &tuz)
 {
-  (*this)[0] = tx;
-  (*this)[1] = ty;
-  (*this)[2] = tz;
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int index_3 = 3;
+  const unsigned int index_4 = 4;
+  const unsigned int index_5 = 5;
+  (*this)[index_0] = tx;
+  (*this)[index_1] = ty;
+  (*this)[index_2] = tz;
 
-  (*this)[3] = tux;
-  (*this)[4] = tuy;
-  (*this)[5] = tuz;
+  (*this)[index_3] = tux;
+  (*this)[index_4] = tuy;
+  (*this)[index_5] = tuz;
   return *this;
 }
 
@@ -201,7 +215,7 @@ vpPoseVector vpPoseVector::buildFrom(double tx, double ty, double tz, double tux
   \return The build pose vector.
 
 */
-vpPoseVector vpPoseVector::buildFrom(const vpHomogeneousMatrix &M)
+vpPoseVector &vpPoseVector::buildFrom(const vpHomogeneousMatrix &M)
 {
   vpRotationMatrix R;
   M.extract(R);
@@ -222,11 +236,13 @@ vpPoseVector vpPoseVector::buildFrom(const vpHomogeneousMatrix &M)
 
   \return The build pose vector.
 */
-vpPoseVector vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpThetaUVector &tu)
+vpPoseVector &vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpThetaUVector &tu)
 {
-  for (unsigned int i = 0; i < 3; i++) {
+  const unsigned int val_3 = 3;
+  const unsigned int index_3 = 3;
+  for (unsigned int i = 0; i < val_3; ++i) {
     (*this)[i] = tv[i];
-    (*this)[i + 3] = tu[i];
+    (*this)[i + index_3] = tu[i];
   }
   return *this;
 }
@@ -244,7 +260,7 @@ vpPoseVector vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpThet
 
   \return The build pose vector.
 */
-vpPoseVector vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpRotationMatrix &R)
+vpPoseVector &vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpRotationMatrix &R)
 {
   vpThetaUVector tu;
   tu.buildFrom(R);
@@ -258,9 +274,12 @@ vpPoseVector vpPoseVector::buildFrom(const vpTranslationVector &tv, const vpRota
 */
 void vpPoseVector::extract(vpTranslationVector &tv) const
 {
-  tv[0] = (*this)[0];
-  tv[1] = (*this)[1];
-  tv[2] = (*this)[2];
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  tv[index_0] = (*this)[index_0];
+  tv[index_1] = (*this)[index_1];
+  tv[index_2] = (*this)[index_2];
 }
 
 /*!
@@ -268,9 +287,15 @@ void vpPoseVector::extract(vpTranslationVector &tv) const
 */
 void vpPoseVector::extract(vpThetaUVector &tu) const
 {
-  tu[0] = (*this)[3];
-  tu[1] = (*this)[4];
-  tu[2] = (*this)[5];
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  const unsigned int index_3 = 3;
+  const unsigned int index_4 = 4;
+  const unsigned int index_5 = 5;
+  tu[index_0] = (*this)[index_3];
+  tu[index_1] = (*this)[index_4];
+  tu[index_2] = (*this)[index_5];
 }
 /*!
   Extract the rotation as a quaternion vector.
@@ -283,14 +308,23 @@ void vpPoseVector::extract(vpQuaternionVector &q) const
 /*!
   Extract the rotation as a rotation matrix.
 */
-void vpPoseVector::extract(vpRotationMatrix &R) const { R.buildFrom((*this)[3], (*this)[4], (*this)[5]); }
+void vpPoseVector::extract(vpRotationMatrix &R) const
+{
+  const unsigned int index_3 = 3;
+  const unsigned int index_4 = 4;
+  const unsigned int index_5 = 5;
+  R.buildFrom((*this)[index_3], (*this)[index_4], (*this)[index_5]);
+}
 /*!
   Return the translation vector that corresponds to the translation part of
   the pose vector.
  */
 vpTranslationVector vpPoseVector::getTranslationVector() const
 {
-  vpTranslationVector tr((*this)[0], (*this)[1], (*this)[2]);
+  const unsigned int index_0 = 0;
+  const unsigned int index_1 = 1;
+  const unsigned int index_2 = 2;
+  vpTranslationVector tr((*this)[index_0], (*this)[index_1], (*this)[index_2]);
   return tr;
 }
 
@@ -316,7 +350,7 @@ vpThetaUVector vpPoseVector::getThetaUVector() const
 
 /*!
 
-  Prints to the standart stream the pose vector.
+  Prints to the standard stream the pose vector.
 
   \warning Values concerning the \f$ \theta {\bf u}\f$ rotation are
   converted in degrees.
@@ -337,11 +371,16 @@ vpThetaUVector vpPoseVector::getThetaUVector() const
 */
 void vpPoseVector::print() const
 {
-  for (unsigned int i = 0; i < 6; i++)
-    if (i < 3)
+  const unsigned int nparam = 6;
+  const unsigned int nparam_t = 3;
+  for (unsigned int i = 0; i < nparam; ++i) {
+    if (i < nparam_t) {
       std::cout << (*this)[i] << " ";
-    else
+    }
+    else {
       std::cout << vpMath::deg((*this)[i]) << " ";
+    }
+  }
   std::cout << std::endl;
 }
 
@@ -360,7 +399,8 @@ void vpPoseVector::save(std::ofstream &f) const
 {
   if (!f.fail()) {
     f << *this;
-  } else {
+  }
+  else {
     throw(vpException(vpException::ioError, "Cannot save the pose vector: ofstream not opened"));
   }
 }
@@ -378,10 +418,12 @@ void vpPoseVector::save(std::ofstream &f) const
 void vpPoseVector::load(std::ifstream &f)
 {
   if (!f.fail()) {
-    for (unsigned int i = 0; i < 6; i++) {
+    const unsigned int nparam = 6;
+    for (unsigned int i = 0; i < nparam; ++i) {
       f >> (*this)[i];
     }
-  } else {
+  }
+  else {
     throw(vpException(vpException::ioError, "Cannot read pose vector: ifstream not opened"));
   }
 }
@@ -406,7 +448,7 @@ vpRowVector vpPoseVector::t() const
   \param s Stream used for the printing.
 
   \param length The suggested width of each vector element.
-  The actual width grows in order to accomodate the whole integral part,
+  The actual width grows in order to accommodate the whole integral part,
   and shrinks if the whole extent is not needed for all the numbers.
   \param intro The introduction which is printed before the vector.
   Can be set to zero (or omitted), in which case
@@ -428,7 +470,7 @@ int vpPoseVector::print(std::ostream &s, unsigned int length, char const *intro)
   std::ostringstream ossFixed;
   std::ios_base::fmtflags original_flags = oss.flags();
 
-  // ossFixed <<std::fixed;
+  // --comment: ossFixed less less std fixed
   ossFixed.setf(std::ios::fixed, std::ios::floatfield);
 
   size_type maxBefore = 0; // the length of the integral part
@@ -450,7 +492,8 @@ int vpPoseVector::print(std::ostream &s, unsigned int length, char const *intro)
     if (p == std::string::npos) {
       maxBefore = vpMath::maximum(maxBefore, thislen);
       // maxAfter remains the same
-    } else {
+    }
+    else {
       maxBefore = vpMath::maximum(maxBefore, p);
       maxAfter = vpMath::maximum(maxAfter, thislen - p - 1);
     }
@@ -460,32 +503,35 @@ int vpPoseVector::print(std::ostream &s, unsigned int length, char const *intro)
   // increase totalLength according to maxBefore
   totalLength = vpMath::maximum(totalLength, maxBefore);
   // decrease maxAfter according to totalLength
-  maxAfter = (std::min)(maxAfter, totalLength - maxBefore);
-  if (maxAfter == 1)
+  maxAfter = std::min<size_type>(maxAfter, totalLength - maxBefore);
+  if (maxAfter == 1) {
     maxAfter = 0;
+  }
 
   // the following line is useful for debugging
   // std::cerr <<totalLength <<" " <<maxBefore <<" " <<maxAfter <<"\n";
 
-  if (intro)
+  if (intro) {
     s << intro;
+  }
   s << "[" << m << "," << n << "]=\n";
 
-  for (unsigned int i = 0; i < m; i++) {
+  for (unsigned int i = 0; i < m; ++i) {
     s << "  ";
     size_type p = values[i].find('.');
     s.setf(std::ios::right, std::ios::adjustfield);
-    s.width((std::streamsize)maxBefore);
+    s.width(static_cast<std::streamsize>(maxBefore));
     s << values[i].substr(0, p).c_str();
 
     if (maxAfter > 0) {
       s.setf(std::ios::left, std::ios::adjustfield);
       if (p != std::string::npos) {
-        s.width((std::streamsize)maxAfter);
+        s.width(static_cast<std::streamsize>(maxAfter));
         s << values[i].substr(p, maxAfter).c_str();
-      } else {
+      }
+      else {
         assert(maxAfter > 1);
-        s.width((std::streamsize)maxAfter);
+        s.width(static_cast<std::streamsize>(maxAfter));
         s << ".0";
       }
     }
@@ -497,7 +543,7 @@ int vpPoseVector::print(std::ostream &s, unsigned int length, char const *intro)
 
   s.flags(original_flags); // restore s to standard state
 
-  return (int)(maxBefore + maxAfter);
+  return static_cast<int>(maxBefore + maxAfter);
 }
 
 /*!
@@ -508,7 +554,41 @@ std::vector<double> vpPoseVector::toStdVector() const
 {
   std::vector<double> v(this->size());
 
-  for (unsigned int i = 0; i < this->size(); i++)
+  unsigned int this_size = this->size();
+  for (unsigned int i = 0; i < this_size; ++i) {
     v[i] = data[i];
+  }
   return v;
 }
+
+#ifdef VISP_HAVE_NLOHMANN_JSON
+#include <visp3/core/vpJsonParsing.h>
+const std::string vpPoseVector::jsonTypeName = "vpPoseVector";
+void vpPoseVector::convert_to_json(nlohmann::json &j) const
+{
+  const vpArray2D<double> *asArray = (vpArray2D<double>*) this;
+  to_json(j, *asArray);
+  j["type"] = vpPoseVector::jsonTypeName;
+}
+void vpPoseVector::parse_json(const nlohmann::json &j)
+{
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+  vpArray2D<double> *asArray = (vpArray2D<double>*) this;
+  if (j.is_object() && j.contains("type")) { // Specific conversions
+    const bool converted = convertFromTypeAndBuildFrom<vpPoseVector, vpHomogeneousMatrix>(j, *this);
+    if (!converted) {
+      from_json(j, *asArray);
+    }
+  }
+  else { // Generic 2D array conversion
+    from_json(j, *asArray);
+  }
+
+  if ((getCols() != 1) && (getRows() != 6)) {
+    throw vpException(vpException::badValue, "From JSON, tried to read something that is not a 6D pose vector");
+  }
+}
+#endif
+END_VISP_NAMESPACE

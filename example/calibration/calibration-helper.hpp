@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2020 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,12 +31,12 @@
  * Description:
  * Helper functions for camera calibration tool.
  *
- *****************************************************************************/
+*****************************************************************************/
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x020300
+#if defined(VISP_HAVE_OPENCV)
 #include <opencv2/core/core.hpp>
 
 #include <visp3/core/vpIoTools.h>
@@ -67,14 +67,14 @@ public:
   bool read(const std::string &filename) // Read the parameters
   {
     // reading configuration file
-    if (!vpIoTools::loadConfigFile(filename))
+    if (!VISP_NAMESPACE_ADDRESSING vpIoTools::loadConfigFile(filename))
       return false;
-    vpIoTools::readConfigVar("BoardSize_Width:", boardSize.width);
-    vpIoTools::readConfigVar("BoardSize_Height:", boardSize.height);
-    vpIoTools::readConfigVar("Square_Size:", squareSize);
-    vpIoTools::readConfigVar("Calibrate_Pattern:", patternToUse);
-    vpIoTools::readConfigVar("Input:", input);
-    vpIoTools::readConfigVar("Tempo:", tempo);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("BoardSize_Width:", boardSize.width);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("BoardSize_Height:", boardSize.height);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("Square_Size:", squareSize);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("Calibrate_Pattern:", patternToUse);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("Input:", input);
+    VISP_NAMESPACE_ADDRESSING vpIoTools::readConfigVar("Tempo:", tempo);
 
     std::cout << "grid width : " << boardSize.width << std::endl;
     std::cout << "grid height: " << boardSize.height << std::endl;
@@ -128,37 +128,37 @@ private:
   std::string patternToUse;
 };
 
-struct CalibInfo {
-  CalibInfo(const vpImage<unsigned char> &img, const std::vector<vpPoint> &points,
-            const std::vector<vpImagePoint> &imPts, const std::string &frame_name)
+struct CalibInfo
+{
+  CalibInfo(const VISP_NAMESPACE_ADDRESSING vpImage<unsigned char> &img, const std::vector<VISP_NAMESPACE_ADDRESSING vpPoint> &points,
+            const std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> &imPts, const std::string &frame_name)
     : m_img(img), m_points(points), m_imPts(imPts), m_frame_name(frame_name)
-  {
-  }
+  { }
 
-  vpImage<unsigned char> m_img;
-  std::vector<vpPoint> m_points;
-  std::vector<vpImagePoint> m_imPts;
+  VISP_NAMESPACE_ADDRESSING vpImage<unsigned char> m_img;
+  std::vector<VISP_NAMESPACE_ADDRESSING vpPoint> m_points;
+  std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> m_imPts;
   std::string m_frame_name;
 };
 
-void drawCalibrationOccupancy(vpImage<unsigned char> &I, const std::vector<CalibInfo> &calib_info,
+void drawCalibrationOccupancy(VISP_NAMESPACE_ADDRESSING vpImage<unsigned char> &I, const std::vector<CalibInfo> &calib_info,
                               unsigned int patternW)
 {
-  I = 0;
+  I = 0u;
   unsigned char pixel_value = static_cast<unsigned char>(255.0 / calib_info.size());
   for (size_t idx = 0; idx < calib_info.size(); idx++) {
     const CalibInfo &calib = calib_info[idx];
 
-    std::vector<vpImagePoint> corners;
+    std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> corners;
     corners.push_back(calib.m_imPts.front());
     corners.push_back(*(calib.m_imPts.begin() + patternW - 1));
     corners.push_back(calib.m_imPts.back());
     corners.push_back(*(calib.m_imPts.end() - patternW));
-    vpPolygon poly(corners);
+    VISP_NAMESPACE_ADDRESSING vpPolygon poly(corners);
 
     for (unsigned int i = 0; i < I.getHeight(); i++) {
       for (unsigned int j = 0; j < I.getWidth(); j++) {
-        if (poly.isInside(vpImagePoint(i, j))) {
+        if (poly.isInside(VISP_NAMESPACE_ADDRESSING vpImagePoint(i, j))) {
           I[i][j] += pixel_value;
         }
       }
@@ -166,17 +166,17 @@ void drawCalibrationOccupancy(vpImage<unsigned char> &I, const std::vector<Calib
   }
 }
 
-std::vector<vpImagePoint> undistort(const vpCameraParameters &cam_dist, const std::vector<vpImagePoint> &imPts)
+std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> undistort(const VISP_NAMESPACE_ADDRESSING vpCameraParameters &cam_dist, const std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> &imPts)
 {
-  std::vector<vpImagePoint> imPts_undist;
+  std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> imPts_undist;
 
-  vpCameraParameters cam(cam_dist.get_px(), cam_dist.get_py(), cam_dist.get_u0(), cam_dist.get_v0());
+  VISP_NAMESPACE_ADDRESSING vpCameraParameters cam(cam_dist.get_px(), cam_dist.get_py(), cam_dist.get_u0(), cam_dist.get_v0());
   for (size_t i = 0; i < imPts.size(); i++) {
     double x = 0, y = 0;
-    vpPixelMeterConversion::convertPoint(cam_dist, imPts[i], x, y);
+    VISP_NAMESPACE_ADDRESSING vpPixelMeterConversion::convertPoint(cam_dist, imPts[i], x, y);
 
-    vpImagePoint imPt;
-    vpMeterPixelConversion::convertPoint(cam, x, y, imPt);
+    VISP_NAMESPACE_ADDRESSING vpImagePoint imPt;
+    VISP_NAMESPACE_ADDRESSING vpMeterPixelConversion::convertPoint(cam, x, y, imPt);
     imPts_undist.push_back(imPt);
   }
 
@@ -190,11 +190,11 @@ bool extractCalibrationPoints(const Settings &s, const cv::Mat &cvI, std::vector
   {
   case Settings::CHESSBOARD:
     found =
-        findChessboardCorners(cvI, s.boardSize, pointBuf,
+      findChessboardCorners(cvI, s.boardSize, pointBuf,
 #if (VISP_HAVE_OPENCV_VERSION >= 0x030000)
-                              cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_FAST_CHECK | cv::CALIB_CB_NORMALIZE_IMAGE);
+                            cv::CALIB_CB_ADAPTIVE_THRESH | cv::CALIB_CB_FAST_CHECK | cv::CALIB_CB_NORMALIZE_IMAGE);
 #else
-                              CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
+      CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
 #endif
     break;
   case Settings::CIRCLES_GRID:
@@ -207,7 +207,7 @@ bool extractCalibrationPoints(const Settings &s, const cv::Mat &cvI, std::vector
 
   if (found) // If done with success,
   {
-    std::vector<vpImagePoint> data;
+    std::vector<VISP_NAMESPACE_ADDRESSING vpImagePoint> data;
 
     if (s.calibrationPattern == Settings::CHESSBOARD) {
       // improve the found corners' coordinate accuracy for chessboard
@@ -215,7 +215,7 @@ bool extractCalibrationPoints(const Settings &s, const cv::Mat &cvI, std::vector
 #if (VISP_HAVE_OPENCV_VERSION >= 0x030000)
                    cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30, 0.1));
 #else
-                   cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+        cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
 #endif
     }
   }
@@ -226,4 +226,4 @@ bool extractCalibrationPoints(const Settings &s, const cv::Mat &cvI, std::vector
 } // namespace calib_helper
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-#endif // VISP_HAVE_OPENCV_VERSION >= 0x020300
+#endif // VISP_HAVE_OPENCV

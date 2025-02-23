@@ -1,7 +1,6 @@
 //! \example tutorial-video-reader.cpp
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/core/vpConfig.h>
+#include <visp3/gui/vpDisplayFactory.h>
 //! [Include]
 #include <visp3/core/vpTime.h>
 #include <visp3/io/vpVideoReader.h>
@@ -15,17 +14,22 @@
  */
 int main(int argc, char **argv)
 {
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020100)
+#if ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
   try {
     std::string videoname = "video.mp4";
 
-    for (int i = 0; i < argc; i++) {
-      if (std::string(argv[i]) == "--name")
-        videoname = std::string(argv[i + 1]);
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) == "--name" && i + 1 < argc) {
+        videoname = std::string(argv[++i]);
+      }
       else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
-        std::cout << "\nUsage: " << argv[0] << " [--name <video name> (default: " << videoname << ")]"
-                  << " [--help] [-h]\n"
-                  << std::endl;
+        std::cout << "\nUsage: " << argv[0]
+          << " [--name <video name> (default: " << videoname << ")]"
+          << " [--help] [-h]\n"
+          << std::endl;
         return EXIT_SUCCESS;
       }
     }
@@ -44,20 +48,17 @@ int main(int argc, char **argv)
     std::cout << "Video framerate: " << g.getFramerate() << "Hz" << std::endl;
     std::cout << "Video dimension: " << I.getWidth() << " " << I.getHeight() << std::endl;
 
-#ifdef VISP_HAVE_X11
-    vpDisplayX d(I);
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI d(I);
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV d(I);
+#ifdef VISP_HAVE_DISPLAY
+    vpDisplay *d = vpDisplayFactory::allocateDisplay(I);
 #else
     std::cout << "No image viewer is available..." << std::endl;
 #endif
     vpDisplay::setTitle(I, "Video reader");
 
     unsigned cpt = 1;
+    bool quit = false;
     //! [vpVideoReader while loop]
-    while (!g.end()) {
+    while ((!g.end()) && (!quit)) {
       //! [vpVideoReader while loop]
       //! [vpVideoReader loop start time]
       double t = vpTime::measureTimeMs();
@@ -68,17 +69,25 @@ int main(int argc, char **argv)
       vpDisplay::display(I);
       vpDisplay::displayText(I, 20, 20, "Click to quit", vpColor::red);
       std::stringstream ss;
-      ss << "Frame: " << cpt++;
+      ss << "Frame: " << ++cpt;
+      std::cout << "Read " << ss.str() << std::endl;
       vpDisplay::displayText(I, 40, 20, ss.str(), vpColor::red);
       vpDisplay::flush(I);
-      if (vpDisplay::getClick(I, false))
-        break;
+      if (vpDisplay::getClick(I, false)) {
+        quit = true;
+      }
       //! [vpVideoReader loop rate]
       vpTime::wait(t, 1000. / g.getFramerate());
       //! [vpVideoReader loop rate]
     }
-    std::cout << "End of video was reached" << std::endl;
-  } catch (const vpException &e) {
+    if (!quit) {
+      std::cout << "End of video was reached" << std::endl;
+    }
+#ifdef VISP_HAVE_DISPLAY
+    delete d;
+#endif
+  }
+  catch (const vpException &e) {
     std::cout << e.getMessage() << std::endl;
   }
 #else

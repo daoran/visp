@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -29,28 +28,22 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  * Description:
- * Tools to automatise the creation of xml parser based on the libXML2
- *
- * Authors:
- * Romain Tallonneau
- *
- *****************************************************************************/
-
-#ifndef vpXmlParser_HH
-#define vpXmlParser_HH
+ * Tools to automatize the creation of xml parser based on the libXML2
+ */
 
 /*!
   \file vpXmlParser.h
   \brief Tools to simplify the creation of xml parser based on the libXML2
 */
 
+#ifndef VP_XML_PARSER_H
+#define VP_XML_PARSER_H
+
 #include <visp3/core/vpConfig.h>
 
 #ifdef VISP_HAVE_XML2
 
 #include <visp3/core/vpException.h>
-
-#include <libxml/parser.h>
 
 #include <iomanip>
 #include <map>
@@ -59,6 +52,15 @@
 #include <string>
 #include <typeinfo>
 
+struct _xmlDoc;
+typedef _xmlDoc xmlDoc;
+typedef xmlDoc *xmlDocPtr;
+
+struct _xmlNode;
+typedef _xmlNode xmlNode;
+typedef xmlNode *xmlNodePtr;
+
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpXmlParser
 
@@ -97,6 +99,8 @@
   A class to parse this document is declared as follows:
 
   \code
+  #include <libxml/parser.h>
+
   class vpDataParser: public vpXmlParser
   {
   private:
@@ -109,7 +113,7 @@
       range,
       step,
       size_filter
-    }dataToParse
+    } dataToParse
 
     vpDataParser(){
       nodeMap["config"] = config;
@@ -121,8 +125,7 @@
     virtual void writeMainClass(xmlNodePtr node);
     virtual void readMainClass(xmlDocPtr doc, xmlNodePtr node);
 
-    // additionals methods specific to the data to parse
-    // such as: accessors
+    // additional methods specific to the data to parse such as: accessors
   }
   \endcode
 
@@ -132,7 +135,7 @@
   void
   vpDataParser::readMainClass(xmlDocPtr doc, xmlNodePtr node)
   {
-    for (xmlNodePtr tmpNode = node->xmlChildrenNode; tmpNode != NULL; tmpNode = tmpNode->next) {
+    for (xmlNodePtr tmpNode = node->xmlChildrenNode; tmpNode != nullptr; tmpNode = tmpNode->next) {
       if(tmpNode->type == XML_ELEMENT_NODE) {
 
         std::map<std::string, int>::iterator iter = this->nodeMap.find((char*)tmpNode->name);
@@ -188,7 +191,7 @@ protected:
 
     As the content of the function depends on the structure of the file to
     read, data name, data types and data values, it has to be reimplemented
-    for every type of filenam
+    for every type of filename.
 
     \param doc : a pointer representing the document
     \param node : the root node of the document
@@ -268,7 +271,7 @@ public:
     dataToParse["size_filter"] = 3;
     \endcode
 
-    Or, you can use keyzord instead of number as key but it implies to declare
+    Or, you can use keyword instead of number as key but it implies to declare
     in the child class an enumeration type of the name. For example:
 
     \code
@@ -311,10 +314,10 @@ public:
   static function vpXmlParser::cleanup() that calls xmlCleanupParser() that
   could be called just before exit().
     */
-  static void cleanup() { xmlCleanupParser(); }
+  static void cleanup();
   //@}
 };
-
+END_VISP_NAMESPACE
 #endif /* VISP_HAVE_XML2 */
 
 #endif

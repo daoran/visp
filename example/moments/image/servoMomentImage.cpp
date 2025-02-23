@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,11 +31,7 @@
  * Description:
  * Example of visual servoing with moments using an image as object
  * container
- *
- * Authors:
- * Filip Novotny
- * Manikandan.B
- *****************************************************************************/
+ */
 
 /*!
   \example servoMomentImage.cpp
@@ -46,6 +42,7 @@
 
 #include <iostream>
 #include <visp3/core/vpCameraParameters.h>
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpMath.h>
@@ -54,10 +51,7 @@
 #include <visp3/core/vpMomentObject.h>
 #include <visp3/core/vpPlane.h>
 #include <visp3/core/vpPoseVector.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/gui/vpPlot.h>
 #include <visp3/robot/vpImageSimulator.h>
 #include <visp3/robot/vpSimulatorCamera.h>
@@ -66,43 +60,39 @@
 #include <visp3/visual_features/vpFeaturePoint.h>
 #include <visp3/vs/vpServo.h>
 
-#if !defined(_WIN32) && !defined(VISP_HAVE_PTHREAD)
-// Robot simulator used in this example is not available
-int main()
-{
-  std::cout << "Can't run this example since vpSimulatorAfma6 capability is "
-               "not available."
-            << std::endl;
-  std::cout << "You should install pthread third-party library." << std::endl;
-  return EXIT_SUCCESS;
-}
-// No display available
-#elif !defined(VISP_HAVE_X11) && !defined(VISP_HAVE_OPENCV) && !defined(VISP_HAVE_GDI) && !defined(VISP_HAVE_D3D9) &&  \
-    !defined(VISP_HAVE_GTK)
+#if !defined(VISP_HAVE_DISPLAY)
 int main()
 {
   std::cout << "Can't run this example since no display capability is available." << std::endl;
-  std::cout << "You should install one of the following third-party library: "
-               "X11, OpenCV, GDI, GTK."
-            << std::endl;
+  std::cout << "You should install one of the following third-party library: X11, OpenCV, GDI, GTK." << std::endl;
+  return EXIT_SUCCESS;
+}
+#elif !defined(VISP_HAVE_THREADS)
+int main()
+{
+  std::cout << "Can't run this example since multi-threading capability is not available." << std::endl;
+  std::cout << "You should maybe enable cxx11 standard." << std::endl;
   return EXIT_SUCCESS;
 }
 #else
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 class servoMoment
 {
 public:
   servoMoment()
-    : m_width(640), m_height(480), m_cMo(), m_cdMo(), m_robot(), m_Iint(m_height, m_width, 0), m_task(), m_cam(),
-      m_error(0), m_imsim(), m_cur_img(m_height, m_width, 0), m_src_img(m_height, m_width, 0),
-      m_dst_img(m_height, m_width, 0), m_start_img(m_height, m_width, 0), m_interaction_type(), m_src(6), m_dst(6),
-      m_moments(NULL), m_momentsDes(NULL), m_featureMoments(NULL), m_featureMomentsDes(NULL), m_displayInt(NULL)
-  {
-  }
+    : m_width(640), m_height(480), m_cMo(), m_cdMo(), m_robot(), m_Iint(m_height, m_width, vpRGBa(0)), m_task(), m_cam(),
+    m_error(0), m_imsim(), m_cur_img(m_height, m_width, 0), m_src_img(m_height, m_width, 0),
+    m_dst_img(m_height, m_width, 0), m_start_img(m_height, m_width, vpRGBa(0)), m_interaction_type(), m_src(6), m_dst(6),
+    m_moments(nullptr), m_momentsDes(nullptr), m_featureMoments(nullptr), m_featureMomentsDes(nullptr), m_displayInt(nullptr)
+  { }
   ~servoMoment()
   {
-#ifdef VISP_HAVE_DISPLAY
+#if defined(VISP_HAVE_DISPLAY) && (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
     if (m_displayInt) {
       delete m_displayInt;
     }
@@ -202,9 +192,9 @@ public:
     // don't need to be specific, vpMomentCommon automatically loads
     // Xg,Yg,An,Ci,Cj,Alpha moments
     m_moments = new vpMomentCommon(vpMomentCommon::getSurface(m_dst), vpMomentCommon::getMu3(m_dst),
-                                   vpMomentCommon::getAlpha(m_dst), vec[2], true);
+      vpMomentCommon::getAlpha(m_dst), vec[2], true);
     m_momentsDes = new vpMomentCommon(vpMomentCommon::getSurface(m_dst), vpMomentCommon::getMu3(m_dst),
-                                      vpMomentCommon::getAlpha(m_dst), vec[2], true);
+      vpMomentCommon::getAlpha(m_dst), vec[2], true);
     // same thing with common features
     m_featureMoments = new vpFeatureMomentCommon(*m_moments);
     m_featureMomentsDes = new vpFeatureMomentCommon(*m_momentsDes);
@@ -220,11 +210,11 @@ public:
     //////////////////////////////////add useful features to
     /// task//////////////////////////////
     m_task.addFeature(m_featureMoments->getFeatureGravityNormalized(),
-                      m_featureMomentsDes->getFeatureGravityNormalized());
+      m_featureMomentsDes->getFeatureGravityNormalized());
     m_task.addFeature(m_featureMoments->getFeatureAn(), m_featureMomentsDes->getFeatureAn());
     // the moments are different in case of a symmetric object
     m_task.addFeature(m_featureMoments->getFeatureCInvariant(), m_featureMomentsDes->getFeatureCInvariant(),
-                      (1 << 10) | (1 << 11));
+      (1 << 10) | (1 << 11));
     m_task.addFeature(m_featureMoments->getFeatureAlpha(), m_featureMomentsDes->getFeatureAlpha());
 
     m_task.setLambda(1.);
@@ -238,19 +228,12 @@ public:
     m_interaction_type = vpServo::CURRENT; // use interaction matrix for current position
 
 #ifdef VISP_HAVE_DISPLAY
-    // init the right display
-#if defined VISP_HAVE_X11
-    m_displayInt = new vpDisplayX;
-#elif defined VISP_HAVE_OPENCV
-    m_displayInt = new vpDisplayOpenCV;
-#elif defined VISP_HAVE_GDI
-    m_displayInt = new vpDisplayGDI;
-#elif defined VISP_HAVE_D3D9
-    m_displayInt = new vpDisplayD3D;
-#elif defined VISP_HAVE_GTK
-    m_displayInt = new vpDisplayGTK;
+    // init the display
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    m_displayInt = vpDisplayFactory::createDisplay(m_Iint, 50, 50, "Visual servoing with moments");
+#else
+    m_displayInt = vpDisplayFactory::allocateDisplay(m_Iint, 50, 50, "Visual servoing with moments");
 #endif
-    m_displayInt->init(m_Iint, 50, 50, "Visual servoing with moments");
 #endif
 
     paramRobot(); // set up robot parameters
@@ -382,12 +365,12 @@ public:
      * -------------------------------------
      */
     const unsigned int NbGraphs = 3;                            // No. of graphs
-    const unsigned int NbCurves_in_graph[NbGraphs] = {6, 6, 6}; // Curves in each graph
+    const unsigned int NbCurves_in_graph[NbGraphs] = { 6, 6, 6 }; // Curves in each graph
 
     ViSP_plot.init(NbGraphs, 800, 800, 100 + static_cast<int>(m_width), 50, "Visual Servoing results...");
 
     vpColor Colors[6] = {// Colour for s1, s2, s3,  in 1st plot
-                         vpColor::red, vpColor::green, vpColor::blue, vpColor::orange, vpColor::cyan, vpColor::purple};
+                         vpColor::red, vpColor::green, vpColor::blue, vpColor::orange, vpColor::cyan, vpColor::purple };
 
     for (unsigned int p = 0; p < NbGraphs; p++) {
       ViSP_plot.initGraph(p, NbCurves_in_graph[p]);
@@ -452,7 +435,11 @@ protected:
   vpFeatureMomentCommon *m_featureMoments;
   vpFeatureMomentCommon *m_featureMomentsDes;
 
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> m_displayInt;
+#else
   vpDisplay *m_displayInt;
+#endif
 };
 #endif // #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -470,7 +457,8 @@ int main()
 
     servo.execute(1500);
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
     return EXIT_FAILURE;
   }

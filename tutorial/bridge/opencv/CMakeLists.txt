@@ -1,6 +1,6 @@
-project(tutorial-bridge-opencv)
+cmake_minimum_required(VERSION 3.10)
 
-cmake_minimum_required(VERSION 3.0)
+project(tutorial-bridge-opencv)
 
 find_package(VISP REQUIRED visp_core visp_io)
 
@@ -9,7 +9,7 @@ set(tutorial_cpp
   tutorial-bridge-opencv-image.cpp
   tutorial-bridge-opencv-matrix.cpp)
 
-list(APPEND tutorial_data "${CMAKE_CURRENT_SOURCE_DIR}/chessboard.pgm" )
+list(APPEND tutorial_data "${CMAKE_CURRENT_SOURCE_DIR}/chessboard.jpeg" )
 list(APPEND tutorial_data "${CMAKE_CURRENT_SOURCE_DIR}/monkey.jpeg" )
 
 foreach(cpp ${tutorial_cpp})

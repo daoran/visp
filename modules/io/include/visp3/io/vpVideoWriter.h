@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,29 +29,31 @@
  *
  * Description:
  * Write videos and sequences of images.
- *
- * Authors:
- * Nicolas Melchior
- *
- *****************************************************************************/
+ */
 
 /*!
   \file vpVideoWriter.h
   \brief Write videos and sequences of images.
 */
 
-#ifndef vpVideoWriter_H
-#define vpVideoWriter_H
+#ifndef VP_VIDEO_WRITER_H
+#define VP_VIDEO_WRITER_H
 
 #include <string>
 
 #include <visp3/io/vpImageIo.h>
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x020200
-#include <opencv2/highgui/highgui.hpp>
-#elif VISP_HAVE_OPENCV_VERSION >= 0x020000
-#include <opencv/highgui.h>
+#if ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
+
+#if (VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)
+#include <opencv2/highgui/highgui.hpp> // for cv::VideoCapture
+#elif (VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO)
+#include <opencv2/videoio/videoio.hpp>
 #endif
+
+#endif
+
+BEGIN_VISP_NAMESPACE
 
 /*!
   \class vpVideoWriter
@@ -91,81 +92,90 @@
   #include <visp3/core/vpConfig.h>
   #include <visp3/io/vpVideoWriter.h>
 
-int main()
-{
-  vpImage<vpRGBa> I;
+  #ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+  #endif
 
-  vpVideoWriter writer;
-
-  //Initialize the writer.
-  writer.setFileName("./image/image%04d.jpeg");
-
-  writer.open(I);
-
-  for ( ; ; )
+  int main()
   {
-    //Here the code to capture or create an image and stores it in I.
+    vpImage<vpRGBa> I;
 
-    //Save the image
-    writer.saveFrame(I);
+    vpVideoWriter writer;
+
+    //Initialize the writer.
+    writer.setFileName("./image/image%04d.jpeg");
+
+    writer.open(I);
+
+    for ( ; ; )
+    {
+      //Here the code to capture or create an image and stores it in I.
+
+      //Save the image
+      writer.saveFrame(I);
+    }
+
+    writer.close();
+
+    return 0;
   }
-
-  writer.close();
-
-  return 0;
- }
   \endcode
 
   The other following example explains how to use the class to write directly
   an mpeg file.
 
   \code
-#include <visp3/io/vpVideoWriter.h>
+  #include <visp3/io/vpVideoWriter.h>
 
-int main()
-{
-  vpImage<vpRGBa> I;
+  #ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+  #endif
 
-  vpVideoWriter writer;
-
-  // Set up the framerate to 30Hz. Default is 25Hz.
-  writer.setFramerate(30);
-
-#if VISP_HAVE_OPENCV_VERSION >= 0x030000
-  writer.setCodec( cv::VideoWriter::fourcc('P','I','M','1') );
-#elif VISP_HAVE_OPENCV_VERSION >= 0x020100
-  writer.setCodec( CV_FOURCC('P','I','M','1') );
-#endif
-
-  writer.setFileName("./test.mpeg");
-
-  writer.open(I);
-
-  for ( ; ; )
+  int main()
   {
-    // Here the code to capture or create an image and store it in I.
+  #if defined(VISP_HAVE_OPENCV) && defined(HAVE_OPENCV_VIDEOIO) && defined(HAVE_OPENCV_HIGHGUI)
+    vpImage<vpRGBa> I;
 
-    // Save the image
-    writer.saveFrame(I);
+    vpVideoWriter writer;
+
+    // Set up the framerate to 30Hz. Default is 25Hz.
+    writer.setFramerate(30);
+
+  #if VISP_HAVE_OPENCV_VERSION >= 0x030000
+    writer.setCodec(cv::VideoWriter::fourcc('P', 'I', 'M', '1'));
+  #else
+    writer.setCodec(CV_FOURCC('P', 'I', 'M', '1'));
+  #endif
+
+    writer.setFileName("./test.mpeg");
+
+    writer.open(I);
+
+    for (; ; ) {
+      // Here the code to capture or create an image and store it in I.
+
+      // Save the image
+      writer.saveFrame(I);
+    }
+
+    writer.close();
+  #endif
+    return 0;
   }
-
-  writer.close();
-
-  return 0;
-}
   \endcode
 */
 
 class VISP_EXPORT vpVideoWriter
 {
 private:
-#if VISP_HAVE_OPENCV_VERSION >= 0x020100
+#if ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
   cv::VideoWriter m_writer;
   int m_fourcc;
   double m_framerate;
 #endif
   //! Types of available formats
-  typedef enum {
+  typedef enum
+  {
     FORMAT_PGM,
     FORMAT_PPM,
     FORMAT_JPEG,
@@ -177,7 +187,7 @@ private:
     FORMAT_UNKNOWN
   } vpVideoFormatType;
 
-  //! Video's format which has to be writen
+  //! Video's format which has to be written
   vpVideoFormatType m_formatType;
 
   //! Path to the video or image sequence
@@ -231,7 +241,7 @@ public:
   void saveFrame(vpImage<vpRGBa> &I);
   void saveFrame(vpImage<unsigned char> &I);
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x020100
+#if ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
   inline void setCodec(const int fourcc_codec) { m_fourcc = fourcc_codec; }
 #endif
 
@@ -247,7 +257,7 @@ public:
    *
    * \note Framerate can only be set when OpenCV > 2.1.0.
    */
-#if VISP_HAVE_OPENCV_VERSION >= 0x020100
+#if ((VISP_HAVE_OPENCV_VERSION < 0x030000) && defined(HAVE_OPENCV_HIGHGUI)) || ((VISP_HAVE_OPENCV_VERSION >= 0x030000) && defined(HAVE_OPENCV_VIDEOIO))
   inline void setFramerate(const double framerate) { m_framerate = framerate; }
 #else
   inline void setFramerate(const double dummy) { (void)dummy; }
@@ -262,5 +272,7 @@ private:
   vpVideoFormatType getFormat(const std::string &filename);
   static std::string getExtension(const std::string &filename);
 };
+
+END_VISP_NAMESPACE
 
 #endif

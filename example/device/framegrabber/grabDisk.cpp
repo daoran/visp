@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,25 +31,7 @@
  * Description:
  * Read an image sequence from the disk and display it.
  *
- * Authors:
- * Eric Marchand
- * Fabien Spindler
- *
- *****************************************************************************/
-
-#include <stdlib.h>
-#include <visp3/core/vpConfig.h>
-#include <visp3/core/vpDebug.h>
-#if (defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI))
-
-#include <visp3/core/vpDisplay.h>
-#include <visp3/core/vpImage.h>
-#include <visp3/core/vpIoTools.h>
-#include <visp3/core/vpTime.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayX.h>
-#include <visp3/io/vpDiskGrabber.h>
-#include <visp3/io/vpParseArgv.h>
+*****************************************************************************/
 
 /*!
   \file grabDisk.cpp
@@ -61,8 +43,25 @@
   file.
 */
 
+#include <stdlib.h>
+#include <visp3/core/vpConfig.h>
+#include <visp3/core/vpDebug.h>
+#if defined(VISP_HAVE_DISPLAY)
+
+#include <visp3/core/vpDisplay.h>
+#include <visp3/core/vpImage.h>
+#include <visp3/core/vpIoTools.h>
+#include <visp3/core/vpTime.h>
+#include <visp3/gui/vpDisplayFactory.h>
+#include <visp3/io/vpDiskGrabber.h>
+#include <visp3/io/vpParseArgv.h>
+
 // List of allowed command line options
 #define GETOPTARGS "b:de:f:hi:l:s:z:"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 /*
 
@@ -187,7 +186,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &ba
       nzero = (unsigned)atoi(optarg_);
       break;
     case 'h':
-      usage(argv[0], NULL, ipath, basename, ext, first, last, step, nzero);
+      usage(argv[0], nullptr, ipath, basename, ext, first, last, step, nzero);
       return false;
       break;
 
@@ -200,7 +199,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &ba
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL, ipath, basename, ext, first, last, step, nzero);
+    usage(argv[0], nullptr, ipath, basename, ext, first, last, step, nzero);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -220,6 +219,9 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &ba
 */
 int main(int argc, const char **argv)
 {
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  vpDisplay *display = nullptr;
+#endif
   try {
     std::string env_ipath;
     std::string opt_ipath;
@@ -257,24 +259,24 @@ int main(int argc, const char **argv)
       ipath = opt_ipath;
 
     // Compare ipath and env_ipath. If they differ, we take into account
-    // the input path comming from the command line option
+    // the input path coming from the command line option
     if (!opt_ipath.empty() && !env_ipath.empty()) {
       if (ipath != env_ipath) {
         std::cout << std::endl << "WARNING: " << std::endl;
         std::cout << "  Since -i <visp image path=" << ipath << "> "
-                  << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
-                  << "  we skip the environment variable." << std::endl;
+          << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
+          << "  we skip the environment variable." << std::endl;
       }
     }
 
     // Test if an input path is set
     if (opt_ipath.empty() && env_ipath.empty()) {
-      usage(argv[0], NULL, ipath, opt_basename, opt_ext, opt_first, opt_last, opt_step, opt_nzero);
+      usage(argv[0], nullptr, ipath, opt_basename, opt_ext, opt_first, opt_last, opt_step, opt_nzero);
       std::cerr << std::endl << "ERROR:" << std::endl;
       std::cerr << "  Use -i <visp image path> option or set VISP_INPUT_IMAGE_PATH " << std::endl
-                << "  environment variable to specify the location of the " << std::endl
-                << "  image path where test images are located." << std::endl
-                << std::endl;
+        << "  environment variable to specify the location of the " << std::endl
+        << "  image path where test images are located." << std::endl
+        << std::endl;
       return EXIT_FAILURE;
     }
 
@@ -306,23 +308,21 @@ int main(int argc, const char **argv)
 
     std::cout << "Image size: width : " << I.getWidth() << " height: " << I.getHeight() << std::endl;
 
-// We open a window using either X11 or GDI.
-// Its size is automatically defined by the image (I) size
-#if defined(VISP_HAVE_X11)
-    vpDisplayX display(I);
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI display(I);
+    // We open a window using either of the display library.
+    // Its size is automatically defined by the image (I) size
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    std::shared_ptr<vpDisplay> display = vpDisplayFactory::createDisplay(I);
 #else
-    std::cout << "No image viewer is available..." << std::endl;
+    vpDisplay *display = vpDisplayFactory::allocateDisplay(I);
 #endif
 
     if (opt_display) {
-      display.init(I, 100, 100, "Disk Framegrabber");
+      display->init(I, 100, 100, "Disk Framegrabber");
 
       // display the image
       // The image class has a member that specify a pointer toward
       // the display that has been initialized in the display declaration
-      // therefore is is no longuer necessary to make a reference to the
+      // therefore is is no longer necessary to make a reference to the
       // display variable.
       vpDisplay::display(I);
       vpDisplay::flush(I);
@@ -343,9 +343,20 @@ int main(int argc, const char **argv)
       // Synchronise the loop to 40 ms
       vpTime::wait(tms, 40);
     }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
 }
@@ -354,7 +365,7 @@ int main(int argc, const char **argv)
 int main()
 {
   std::cout << "You do not have X11, or GDI (Graphical Device Interface) functionalities to display images..."
-            << std::endl;
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

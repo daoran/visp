@@ -1,4 +1,5 @@
 //! \example tutorial-matching-keypoint-homography.cpp
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpPixelMeterConversion.h>
 #include <visp3/gui/vpDisplayOpenCV.h>
 #include <visp3/io/vpVideoReader.h>
@@ -7,7 +8,13 @@
 
 int main(int argc, const char **argv)
 {
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020101)
+#if defined(HAVE_OPENCV_HIGHGUI) && defined(HAVE_OPENCV_IMGPROC) && \
+  ((VISP_HAVE_OPENCV_VERSION < 0x050000)  && defined(HAVE_OPENCV_CALIB3D) && defined(HAVE_OPENCV_FEATURES2D)) || \
+  ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D) && defined(HAVE_OPENCV_FEATURES))
+
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
   //! [Select method]
   int method = 0;
 
@@ -75,8 +82,7 @@ int main(int argc, const char **argv)
     std::cout << "Nb matches: " << nbMatch << std::endl;
     //! [Matching]
 
-    std::vector<vpImagePoint> iPref(nbMatch),
-        iPcur(nbMatch); // Coordinates in pixels (for display only)
+    std::vector<vpImagePoint> iPref(nbMatch), iPcur(nbMatch); // Coordinates in pixels (for display only)
     //! [Allocation]
     std::vector<double> mPref_x(nbMatch), mPref_y(nbMatch);
     std::vector<double> mPcur_x(nbMatch), mPcur_y(nbMatch);
@@ -99,7 +105,8 @@ int main(int argc, const char **argv)
                              (unsigned int)(mPref_x.size() * 0.25), 2.0 / cam.get_px(), true);
       else
         vpHomography::robust(mPref_x, mPref_y, mPcur_x, mPcur_y, curHref, inliers, residual, 0.4, 4, true);
-    } catch (...) {
+    }
+    catch (...) {
       std::cout << "Cannot compute homography from matches..." << std::endl;
     }
 

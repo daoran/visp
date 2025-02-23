@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,11 +31,7 @@
  * Description:
  * Geometric features example.
  *
- * Authors:
- * Anthony Saunier
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 /*!
   \file manGeometricFeatures.cpp
 
@@ -49,16 +45,13 @@
 
 */
 
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpDebug.h>
 #include <visp3/io/vpImageIo.h>
 // For 2D image
 #include <visp3/core/vpImage.h>
 // Video device interface
-#include <visp3/core/vpDisplay.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 
 // For frame transformation and projection
 #include <visp3/core/vpCameraParameters.h>
@@ -75,29 +68,29 @@
 
 int main()
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+  // create a display window
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display = vpDisplayFactory::createDisplay();
+#else
+  vpDisplay *display = vpDisplayFactory::allocateDisplay();
+#endif
+
   try {
     std::cout << "ViSP geometric features display example" << std::endl;
     unsigned int height = 288;
     unsigned int width = 384;
     vpImage<unsigned char> I(height, width);
-    I = 255; // I is a white image
+    I = 255u; // I is a white image
 
-    // create a display window
-#if defined(VISP_HAVE_X11)
-    vpDisplayX display;
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI display;
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV display;
-#elif defined(VISP_HAVE_GTK)
-    vpDisplayGTK display;
-#else
-    std::cout << "Please install X11, GDI, OpenCV or GTK to see the result of this example" << std::endl;
-#endif
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV) || defined(VISP_HAVE_GTK)
+
+#if defined(VISP_HAVE_DISPLAY)
     // initialize a display attached to image I
-    display.init(I, 100, 100, "ViSP geometric features display");
+    display->init(I, 100, 100, "ViSP geometric features display");
 #endif
 
     // camera parameters to digitalize the image plane
@@ -145,17 +138,28 @@ int main()
     vpDisplay::displayText(I, 10, 10, "Click in the display to exit", vpColor::red);
     vpDisplay::getClick(I); // wait for a click in the display to exit
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV) || defined(VISP_HAVE_GTK)
+#if defined(VISP_HAVE_DISPLAY)
     // save the drawing
     vpImage<vpRGBa> Ic;
     vpDisplay::getImage(I, Ic);
     std::cout << "ViSP creates \"./geometricFeatures.ppm\" image" << std::endl;
     vpImageIo::write(Ic, "./geometricFeatures.ppm");
 #endif
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
 
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
+#endif
   return EXIT_SUCCESS;
 }

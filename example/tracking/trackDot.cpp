@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,8 +29,7 @@
  *
  * Description:
  * Example of dot tracking.
- *
- *****************************************************************************/
+ */
 
 /*!
   \file trackDot.cpp
@@ -46,29 +44,23 @@
 */
 
 #include <visp3/core/vpConfig.h>
-#include <visp3/core/vpDebug.h>
 
-#include <iomanip>
-#include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
-
-#if defined(VISP_HAVE_MODULE_BLOB) &&                                                                                  \
-    (defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV))
+#if defined(VISP_HAVE_MODULE_BLOB) && defined(VISP_HAVE_DISPLAY)
 
 #include <visp3/blob/vpDot.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/core/vpIoTools.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpParseArgv.h>
 
 // List of allowed command line options
 #define GETOPTARGS "cdf:hi:l:p:s:"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 /*!
 
@@ -128,8 +120,8 @@ OPTIONS:                                               Default\n\
      Step between two images.\n\
 \n\
   -c\n\
-     Disable the mouse click. Useful to automaze the \n\
-     execution of this program without humain intervention.\n\
+     Disable the mouse click. Useful to automate the \n\
+     execution of this program without human intervention.\n\
 \n\
   -d \n\
      Turn off the display.\n\
@@ -188,7 +180,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &pp
       step = (unsigned)atoi(optarg_);
       break;
     case 'h':
-      usage(argv[0], NULL, ipath, ppath, first, last, step);
+      usage(argv[0], nullptr, ipath, ppath, first, last, step);
       return false;
       break;
 
@@ -201,7 +193,7 @@ bool getOptions(int argc, const char **argv, std::string &ipath, std::string &pp
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL, ipath, ppath, first, last, step);
+    usage(argv[0], nullptr, ipath, ppath, first, last, step);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -250,26 +242,26 @@ int main(int argc, const char **argv)
       ipath = opt_ipath;
 
     // Compare ipath and env_ipath. If they differ, we take into account
-    // the input path comming from the command line option
+    // the input path coming from the command line option
     if (!opt_ipath.empty() && !env_ipath.empty() && opt_ppath.empty()) {
       if (ipath != env_ipath) {
         std::cout << std::endl << "WARNING: " << std::endl;
         std::cout << "  Since -i <visp image path=" << ipath << "> "
-                  << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
-                  << "  we skip the environment variable." << std::endl;
+          << "  is different from VISP_IMAGE_PATH=" << env_ipath << std::endl
+          << "  we skip the environment variable." << std::endl;
       }
     }
 
     // Test if an input path is set
     if (opt_ipath.empty() && env_ipath.empty() && opt_ppath.empty()) {
-      usage(argv[0], NULL, ipath, opt_ppath, opt_first, opt_last, opt_step);
+      usage(argv[0], nullptr, ipath, opt_ppath, opt_first, opt_last, opt_step);
       std::cerr << std::endl << "ERROR:" << std::endl;
       std::cerr << "  Use -i <visp image path> option or set VISP_INPUT_IMAGE_PATH " << std::endl
-                << "  environment variable to specify the location of the " << std::endl
-                << "  image path where test images are located." << std::endl
-                << "  Use -p <personal image path> option if you want to " << std::endl
-                << "  use personal images." << std::endl
-                << std::endl;
+        << "  environment variable to specify the location of the " << std::endl
+        << "  image path where test images are located." << std::endl
+        << "  Use -p <personal image path> option if you want to " << std::endl
+        << "  use personal images." << std::endl
+        << std::endl;
 
       return EXIT_FAILURE;
     }
@@ -278,6 +270,7 @@ int main(int argc, const char **argv)
     // it size is not defined yet, it will be defined when the image will
     // read on the disk
     vpImage<unsigned char> I;
+    vpDisplay *display = nullptr;
 
     unsigned iter = opt_first;
     std::ostringstream s;
@@ -312,16 +305,17 @@ int main(int argc, const char **argv)
     // vpImageIo::read() may throw various exception if, for example,
     // the file does not exist, or if the memory cannot be allocated
     try {
-      vpCTRACE << "Load: " << filename << std::endl;
+      std::cout << "Load: " << filename << std::endl;
 
       vpImageIo::read(I, filename);
-    } catch (...) {
+    }
+    catch (...) {
       // If an exception is thrown by vpImageIo::read() it will result in the end of the program.
       std::cerr << std::endl << "ERROR:" << std::endl;
       std::cerr << "  Cannot read " << filename << std::endl;
       if (opt_ppath.empty()) {
         std::cerr << "  Check your -i " << ipath << " option " << std::endl
-                  << "  or VISP_INPUT_IMAGE_PATH environment variable." << std::endl;
+          << "  or VISP_INPUT_IMAGE_PATH environment variable." << std::endl;
       }
       else {
         std::cerr << "  Check your -p " << opt_ppath << " option " << std::endl;
@@ -329,24 +323,15 @@ int main(int argc, const char **argv)
       return EXIT_FAILURE;
     }
 
-// We open a window using either X11, GTK or GDI.
-#if defined VISP_HAVE_X11
-    vpDisplayX display;
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK display;
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI display;
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV display;
-#endif
-
     if (opt_display) {
+      // We open a window using either X11, GTK, OpenCV or GDI
+      display = vpDisplayFactory::allocateDisplay();
       // Display size is automatically defined by the image (I) size
-      display.init(I, 100, 100, "Display...");
+      display->init(I, 100, 100, "Display...");
       // Display the image
       // The image class has a member that specify a pointer toward
       // the display that has been initialized in the display declaration
-      // therefore is is no longuer necessary to make a reference to the
+      // therefore is is no longer necessary to make a reference to the
       // display variable.
       vpDisplay::display(I);
       vpDisplay::flush(I);
@@ -358,9 +343,10 @@ int main(int argc, const char **argv)
       // by using setGraphics, we request to see the all the pixel of the dot
       // in green on the screen.
       // It uses the overlay image plane.
-      // The default of this setting is that it is time consumming
+      // The default of this setting is that it is time consuming
       d.setGraphics(true);
-    } else {
+    }
+    else {
       d.setGraphics(false);
     }
     // we also request to compute the dot moment m00, m10, m01, m11, m20, m02
@@ -373,8 +359,9 @@ int main(int argc, const char **argv)
       // a right mouse click on the dot is expected
       std::cout << "Click on a white dot you want to track..." << std::endl;
       d.initTracking(I);
-    } else {
-      // dot location can also be specified explicitely in the
+    }
+    else {
+      // dot location can also be specified explicitly in the
       // initTracking method : d.initTracking(I,ip) where ip is the
       // image point from which the dot is searched
       vpImagePoint ip;
@@ -383,14 +370,15 @@ int main(int argc, const char **argv)
       d.initTracking(I, ip);
     }
 
-    vpImagePoint cog;
-    while (iter < opt_last) {
+    bool quit = false;
+    while ((iter < opt_last) && (!quit)) {
       // set the new image name
       if (opt_ppath.empty()) {
         s.str("");
         s << "image." << std::setw(4) << std::setfill('0') << iter << "." << ext;
         filename = vpIoTools::createFilePath(dirname, s.str());
-      } else {
+      }
+      else {
         snprintf(cfilename, FILENAME_MAX, opt_ppath.c_str(), iter);
         filename = cfilename;
       }
@@ -409,7 +397,7 @@ int main(int argc, const char **argv)
       d.track(I);
 
       std::cout << "COG (" << vpTime::measureTimeMs() - time << " ms): " << std::endl;
-      cog = d.getCog();
+      vpImagePoint cog = d.getCog();
       std::cout << cog.get_u() << " " << cog.get_v() << std::endl;
       std::cout << "Size:" << std::endl;
       std::cout << "  w: " << d.getWidth() << " h: " << d.getHeight() << std::endl;
@@ -431,19 +419,28 @@ int main(int argc, const char **argv)
         // display a red cross (size 10) in the image at the dot center
         // of gravity location
         vpDisplay::displayCross(I, cog, 10, vpColor::red);
+
+        vpDisplay::displayText(I, 20, 20, "Click to quit...", vpColor::red);
+        if (vpDisplay::getClick(I, false)) {
+          quit = true;
+        }
         // flush the X11 buffer
         vpDisplay::flush(I);
       }
       iter += opt_step;
     }
 
-    if (opt_display && opt_click_allowed) {
+    if (opt_display && opt_click_allowed && !quit) {
       std::cout << "\nA click to exit..." << std::endl;
       // Wait for a blocking mouse click
       vpDisplay::getClick(I);
     }
+    if (display) {
+      delete display;
+    }
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
     return EXIT_FAILURE;
   }
@@ -454,8 +451,8 @@ int main(int argc, const char **argv)
 int main()
 {
   std::cout << "visp_blob module or X11, GTK, GDI or OpenCV display "
-               "functionalities are required..."
-            << std::endl;
+    "functionalities are required..."
+    << std::endl;
   return EXIT_SUCCESS;
 }
 

@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,40 +31,40 @@
  * Description:
  * Example that shows how to control a Pioneer mobile robot in ViSP.
  *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
+#include <visp3/robot/vpRobotPioneer.h> // Include first to avoid build issues with Status, None, isfinite
 #include <visp3/core/vpDisplay.h>
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpTime.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
-#include <visp3/robot/vpRobotPioneer.h> // Include first to avoid build issues with Status, None, isfinite
 
 #ifndef VISP_HAVE_PIONEER
 int main()
 {
   std::cout << "\nThis example requires Aria 3rd party library. You should "
-               "install it.\n"
-            << std::endl;
+    "install it.\n"
+    << std::endl;
   return EXIT_SUCCESS;
 }
 
 #else
 
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
+
 ArSonarDevice sonar;
 vpRobotPioneer *robot;
-#if defined(VISP_HAVE_X11)
-vpDisplayX *d;
-#elif defined(VISP_HAVE_GDI)
-vpDisplayGDI *d;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+std::shared_ptr<vpDisplay> display;
+#else
+vpDisplay *display = nullptr;
 #endif
 vpImage<unsigned char> I;
 static bool isInitialized = false;
@@ -84,11 +84,11 @@ void sonarPrinter(void)
   ArPose *pose;
 
   sd = (ArSonarDevice *)robot->findRangeDevice("sonar");
-  if (sd != NULL)
+  if (sd != nullptr)
   {
     sd->lockDevice();
     readings = sd->getCurrentBuffer();
-    if (readings != NULL)
+    if (readings != nullptr)
     {
       for (it = readings->begin(); it != readings->end(); ++it)
       {
@@ -115,7 +115,7 @@ void sonarPrinter(void)
   if (std::fabs(range - sonar.getMaxRange()) > std::numeric_limits<double>::epsilon())
     printf("%3.0f ", angle);
   printf("\n");
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)
+#if defined(VISP_HAVE_DISPLAY)
   // if (isInitialized && range != sonar.getMaxRange())
   if (isInitialized && std::fabs(range - sonar.getMaxRange()) > std::numeric_limits<double>::epsilon()) {
     double x = range * cos(vpMath::rad(angle)); // position of the obstacle in the sensor frame
@@ -161,7 +161,7 @@ void sonarPrinter(void)
   ArSensorReading *reading;
   for (int sensor = 0; sensor < robot->getNumSonar(); sensor++) {
     reading = robot->getSonarReading(sensor);
-    if (reading != NULL) {
+    if (reading != nullptr) {
       angle = reading->getSensorTh();
       range = reading->getRange();
       double sx = reading->getSensorX(); // position of the sensor in the robot frame
@@ -183,7 +183,7 @@ void sonarPrinter(void)
       //             reading->getSensorY(), reading->getSensorTh(),
       //             reading->getRange());
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)
+#if defined(VISP_HAVE_DISPLAY)
       // if (isInitialized && range != sonar.getMaxRange())
       if (isInitialized && std::fabs(range - sonar.getMaxRange()) > std::numeric_limits<double>::epsilon()) {
         vpDisplay::displayLine(I, si, sj, i, j, vpColor::blue, 2);
@@ -196,7 +196,7 @@ void sonarPrinter(void)
     }
   }
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)
+#if defined(VISP_HAVE_DISPLAY)
   if (isInitialized)
     vpDisplay::flush(I);
 #endif
@@ -239,14 +239,13 @@ int main(int argc, char **argv)
     // Create a display to show sensor data
     if (isInitialized == false) {
       I.resize((unsigned int)half_size * 2, (unsigned int)half_size * 2);
-      I = 255;
+      I = 255u;
 
-#if defined(VISP_HAVE_X11)
-      d = new vpDisplayX;
-#elif defined(VISP_HAVE_GDI)
-      d = new vpDisplayGDI;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+      display = vpDisplayFactory::createDisplay(I, -1, -1, "Sonar range data");
+#else
+      display = vpDisplayFactory::allocateDisplay(I, -1, -1, "Sonar range data");
 #endif
-      d->init(I, -1, -1, "Sonar range data");
       isInitialized = true;
     }
 #endif
@@ -293,7 +292,8 @@ int main(int argc, char **argv)
               try {
                 // Create the dirname
                 vpIoTools::makeDirectory(opath);
-              } catch (...) {
+              }
+              catch (...) {
                 std::cerr << std::endl << "ERROR:" << std::endl;
                 std::cerr << "  Cannot create " << opath << std::endl;
                 return EXIT_FAILURE;
@@ -329,10 +329,9 @@ int main(int argc, char **argv)
     std::cout << "Ending robot thread..." << std::endl;
     robot->stopRunning();
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)
-    if (isInitialized) {
-      if (d != NULL)
-        delete d;
+#if defined(VISP_HAVE_DISPLAY) && (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (isInitialized && (display != nullptr)) {
+      delete display;
     }
 #endif
 
@@ -344,8 +343,14 @@ int main(int argc, char **argv)
     // exit
     ArLog::log(ArLog::Normal, "simpleMotionCommands: Exiting.");
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if defined(VISP_HAVE_DISPLAY) && (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
 }

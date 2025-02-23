@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -32,11 +31,7 @@
  *   tests the control law
  *   eye-in-hand control
  *   velocity computed in articular
- *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+ */
 
 /*!
   \file servoPtu46Point2DArtVelocity.cpp
@@ -64,15 +59,13 @@
 #endif
 #include <signal.h>
 
-#if (defined(VISP_HAVE_PTU46) & defined(VISP_HAVE_DC1394))
+#if defined(VISP_HAVE_PTU46) && defined(VISP_HAVE_DC1394) && defined(VISP_HAVE_THREADS)
 
-#ifdef VISP_HAVE_PTHREAD
-#include <pthread.h>
-#endif
+#include <mutex>
 
 #include <visp3/core/vpDisplay.h>
 #include <visp3/core/vpImage.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/sensor/vp1394TwoGrabber.h>
 
 #include <visp3/core/vpHomogeneousMatrix.h>
@@ -90,22 +83,22 @@
 
 #include <visp3/blob/vpDot2.h>
 
-#ifdef VISP_HAVE_PTHREAD
-pthread_mutex_t mutexEndLoop = PTHREAD_MUTEX_INITIALIZER;
-#endif
+std::mutex mutexEndLoop;
 
 void signalCtrC(int signumber)
 {
   (void)(signumber);
-#ifdef VISP_HAVE_PTHREAD
-  pthread_mutex_unlock(&mutexEndLoop);
-#endif
+  mutexEndLoop.unlock();
   usleep(1000 * 10);
   vpTRACE("Ctrl-C pressed...");
 }
 
 int main()
 {
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
   std::cout << std::endl;
   std::cout << "-------------------------------------------------------" << std::endl;
   std::cout << " Test program for vpServo " << std::endl;
@@ -115,11 +108,13 @@ int main()
   std::cout << "-------------------------------------------------------" << std::endl;
   std::cout << std::endl;
 
-  try {
-
-#ifdef VISP_HAVE_PTHREAD
-    pthread_mutex_lock(&mutexEndLoop);
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
 #endif
+  try {
+    mutexEndLoop.lock();
     signal(SIGINT, &signalCtrC);
 
     vpRobotPtu46 robot;
@@ -138,19 +133,30 @@ int main()
 
     try {
       g.acquire(I);
-    } catch (...) {
+    }
+    catch (...) {
       vpERROR_TRACE(" Error caught");
       return EXIT_FAILURE;
     }
 
-    vpDisplayX display(I, 100, 100, "testDisplayX.cpp ");
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display = vpDisplayFactory::createDisplay(I, 100, 100, "Servo Ptu");
+#else
+    display = vpDisplayFactory::allocateDisplay(I, 100, 100, "Servo Ptu");
+#endif
     vpTRACE(" ");
 
     try {
       vpDisplay::display(I);
       vpDisplay::flush(I);
-    } catch (...) {
+    }
+    catch (...) {
       vpERROR_TRACE(" Error caught");
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+      if (display != nullptr) {
+        delete display;
+      }
+#endif
       return EXIT_FAILURE;
     }
 
@@ -167,8 +173,14 @@ int main()
       // dot.initTracking(I) ;
       dot.track(I);
       vpERROR_TRACE("after dot.initTracking(I) ");
-    } catch (...) {
+    }
+    catch (...) {
       vpERROR_TRACE(" Error caught ");
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+      if (display != nullptr) {
+        delete display;
+      }
+#endif
       return EXIT_FAILURE;
     }
 
@@ -218,21 +230,13 @@ int main()
 
     unsigned int iter = 0;
     vpTRACE("\t loop");
-#ifdef VISP_HAVE_PTHREAD
-    while (0 != pthread_mutex_trylock(&mutexEndLoop))
-#else
-    for (;;)
-#endif
-    {
+    while (0 != mutexEndLoop.trylock()) {
       std::cout << "---------------------------------------------" << iter << std::endl;
 
       g.acquire(I);
       vpDisplay::display(I);
 
       dot.track(I);
-
-      //    vpDisplay::displayCross(I,(int)dot.I(), (int)dot.J(),
-      //			   10,vpColor::green) ;
 
       vpFeatureBuilder::create(p, cam, dot);
 
@@ -255,10 +259,21 @@ int main()
 
     vpTRACE("Display task information ");
     task.print();
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Sorry PtU46 not available. Got exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE
   }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
+#endif
   return EXIT_SUCCESS;
 }
 

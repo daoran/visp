@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -29,14 +29,14 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  * Description:
- * Acquire images using OpenCV cv::VideoCapture.
+ * Acquire images using FlyCapture SDK.
  *
- *****************************************************************************/
+*****************************************************************************/
 
 /*!
   \example grabFlyCapture.cpp
 
-  \brief Example of framegrabbing using OpenCV cv::VideoCapture class.
+  \brief Example of framegrabbing using vpFlyCaptureGrabber class.
 
 */
 
@@ -48,14 +48,16 @@
 
 #include <visp3/core/vpImage.h>
 #include <visp3/core/vpImageConvert.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/io/vpParseArgv.h>
 #include <visp3/sensor/vpFlyCaptureGrabber.h>
 
 #define GETOPTARGS "cdhi:n:o:"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 /*!
 
@@ -95,7 +97,7 @@ OPTIONS:                                               Default\n\
   -h \n\
      Print the help.\n\
 \n",
-          icamera, opath.c_str());
+icamera, opath.c_str());
 
   if (badparam) {
     fprintf(stderr, "ERROR: \n");
@@ -141,7 +143,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click, bool &s
       opath = optarg_;
       break;
     case 'h':
-      usage(argv[0], NULL, icamera, opath);
+      usage(argv[0], nullptr, icamera, opath);
       return false;
       break;
 
@@ -154,7 +156,7 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click, bool &s
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL, icamera, opath);
+    usage(argv[0], nullptr, icamera, opath);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -168,6 +170,11 @@ bool getOptions(int argc, const char **argv, bool &display, bool &click, bool &s
 //              1 to dial with a second camera attached to the computer
 int main(int argc, const char **argv)
 {
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
   try {
     bool opt_display = true;
     bool opt_click = true;
@@ -189,14 +196,13 @@ int main(int argc, const char **argv)
     std::cout << "Camera serial: " << g.getCameraSerial(g.getCameraIndex()) << std::endl;
     std::cout << "Image size   : " << I.getWidth() << " " << I.getHeight() << std::endl;
 
-    vpDisplay *display = NULL;
     if (opt_display) {
-#if defined(VISP_HAVE_X11)
-      display = new vpDisplayX(I);
-#elif defined(VISP_HAVE_GDI)
-      display = new vpDisplayGDI(I);
-#elif defined(VISP_HAVE_OPENCV)
-      display = new vpDisplayOpenCV(I);
+#if defined(VISP_HAVE_DISPLAY)
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+      display = vpDisplayFactory::createDisplay(I);
+#else
+      display = vpDisplayFactory::allocateDisplay(I);
+#endif
 #else
       std::cout << "No image viewer is available..." << std::endl;
 #endif
@@ -220,19 +226,29 @@ int main(int argc, const char **argv)
       if (opt_click && opt_display) {
         if (vpDisplay::getClick(I, false) == true)
           break;
-      } else {
+      }
+      else {
         static unsigned int cpt = 0;
         if (cpt++ == 10)
           break;
       }
     }
-    if (display)
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
       delete display;
+    }
+#endif
 
     // The camera connection will be closed automatically in vpFlyCapture
     // destructor
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     std::cout << "Catch an exception: " << e.getStringMessage() << std::endl;
     return EXIT_FAILURE;
   }

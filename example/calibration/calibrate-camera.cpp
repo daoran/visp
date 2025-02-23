@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,17 +29,26 @@
  *
  * Description:
  * Camera calibration with chessboard or circle calibration grid.
- *
- *****************************************************************************/
+ */
 #include <iostream>
 
 #include <visp3/core/vpConfig.h>
 
-#if VISP_HAVE_OPENCV_VERSION >= 0x030000
+#if defined(HAVE_OPENCV_HIGHGUI) &&  defined(HAVE_OPENCV_IMGPROC) && defined(VISP_HAVE_PUGIXML) \
+  && (((VISP_HAVE_OPENCV_VERSION < 0x050000) && defined(HAVE_OPENCV_CALIB3D)) || ((VISP_HAVE_OPENCV_VERSION >= 0x050000) && defined(HAVE_OPENCV_3D)))
 
 #include <map>
 
+#if defined(HAVE_OPENCV_CALIB3D)
 #include <opencv2/calib3d/calib3d.hpp>
+#elif defined(HAVE_OPENCV_CALIB)
+#include <opencv2/calib.hpp>
+#endif
+
+#if defined(HAVE_OPENCV_CONTRIB)
+#include <opencv2/contrib/contrib.hpp> // Needed on Ubuntu 16.04 with OpenCV 2.4.9.1
+#endif
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -53,11 +61,7 @@
 #include <visp3/core/vpPixelMeterConversion.h>
 #include <visp3/core/vpPoint.h>
 #include <visp3/core/vpXmlParserCamera.h>
-#include <visp3/gui/vpDisplayD3D.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpVideoReader.h>
 
 #include "calibration-helper.hpp"
@@ -67,39 +71,47 @@ using namespace calib_helper;
 void usage(const char *argv[], int error)
 {
   std::cout << "Synopsis" << std::endl
-            << "  " << argv[0] << " <configuration file>.cfg [--init-from-xml <camera-init.xml>]"
-            << " [--camera-name <name>] [--aspect-ratio <ratio>] [--output <file.xml>] [--help] [-h]" << std::endl
-            << std::endl;
+    << "  " << argv[0] << " <configuration file>.cfg [--init-from-xml <camera-init.xml>]"
+    << " [--camera-name <name>] [--aspect-ratio <ratio>] [--output <file.xml>] [--help] [-h]" << std::endl
+    << std::endl;
   std::cout << "Description" << std::endl
-            << "  <configuration file>.cfg  Configuration file. See example in" << std::endl
-            << "    \"default-chessboard.cfg\" or in \"default-circles.cfg\"." << std::endl
-            << "    Default: \"default.cfg\"." << std::endl
-            << std::endl
-            << "  --init-from-xml <camera-init.xml>  XML file that contains camera parameters" << std::endl
-            << "    used to initialize the calibration process." << std::endl
-            << std::endl
-            << "  --camera-name <name>  Camera name in the XML file set using \"--init-from-xml\" option." << std::endl
-            << "    Default: \"Camera\"." << std::endl
-            << std::endl
-            << "  --aspect-ratio <ratio>  Pixel aspect ratio. " << std::endl
-            << "    To estimate px = py, use \"--aspect-ratio 1\" option. Set to -1" << std::endl
-            << "    to unset any constraint for px and py parameters. " << std::endl
-            << "    Default: -1." << std::endl
-            << std::endl
-            << "  --output <file.xml>  XML file containing estimated camera parameters." << std::endl
-            << "    Default: \"camera.xml\"." << std::endl
-            << std::endl
-            << "  --help, -h  Print this helper message." << std::endl
-            << std::endl;
+    << "  <configuration file>.cfg  Configuration file. See example in" << std::endl
+    << "    \"default-chessboard.cfg\" or in \"default-circles.cfg\"." << std::endl
+    << "    Default: \"default.cfg\"." << std::endl
+    << std::endl
+    << "  --init-from-xml <camera-init.xml>  XML file that contains camera parameters" << std::endl
+    << "    used to initialize the calibration process." << std::endl
+    << std::endl
+    << "  --camera-name <name>  Camera name in the XML file set using \"--init-from-xml\" option." << std::endl
+    << "    Default: \"Camera\"." << std::endl
+    << std::endl
+    << "  --aspect-ratio <ratio>  Pixel aspect ratio. " << std::endl
+    << "    To estimate px = py, use \"--aspect-ratio 1\" option. Set to -1" << std::endl
+    << "    to unset any constraint for px and py parameters. " << std::endl
+    << "    Default: -1." << std::endl
+    << std::endl
+    << "  --output <file.xml>  XML file containing estimated camera parameters." << std::endl
+    << "    Default: \"camera.xml\"." << std::endl
+    << std::endl
+    << "  --help, -h  Print this helper message." << std::endl
+    << std::endl;
   if (error) {
     std::cout << "Error" << std::endl
-              << "  "
-              << "Unsupported parameter " << argv[error] << std::endl;
+      << "  "
+      << "Unsupported parameter " << argv[error] << std::endl;
   }
 }
 
 int main(int argc, const char *argv[])
 {
+#if defined(ENABLE_VISP_NAMESPACE)
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  vpDisplay *d = nullptr;
+#endif
+
   try {
     if (argc == 1) {
       usage(argv, 0);
@@ -116,19 +128,24 @@ int main(int argc, const char *argv[])
       if (std::string(argv[i]) == "--init-from-xml" && i + 1 < argc) {
         opt_init_camera_xml_file = std::string(argv[i + 1]);
         i++;
-      } else if (std::string(argv[i]) == "--camera-name" && i + 1 < argc) {
+      }
+      else if (std::string(argv[i]) == "--camera-name" && i + 1 < argc) {
         opt_camera_name = std::string(argv[i + 1]);
         i++;
-      } else if (std::string(argv[i]) == "--output" && i + 1 < argc) {
+      }
+      else if (std::string(argv[i]) == "--output" && i + 1 < argc) {
         opt_output_file_name = std::string(argv[i + 1]);
         i++;
-      } else if (std::string(argv[i]) == "--aspect-ratio" && i + 1 < argc) {
+      }
+      else if (std::string(argv[i]) == "--aspect-ratio" && i + 1 < argc) {
         opt_aspect_ratio = std::atof(argv[i + 1]);
         i++;
-      } else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
+      }
+      else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
         usage(argv, 0);
         return EXIT_SUCCESS;
-      } else {
+      }
+      else {
         usage(argv, i);
         return EXIT_FAILURE;
       }
@@ -157,7 +174,7 @@ int main(int argc, const char *argv[])
     if (vpIoTools::checkFilename(opt_output_file_name)) {
       std::cout << "\nOutput file name " << opt_output_file_name << " already exists." << std::endl;
       std::cout << "Remove this file or change output file name using [--output <file.xml>] command line option."
-                << std::endl;
+        << std::endl;
       return EXIT_SUCCESS;
     }
 
@@ -167,21 +184,18 @@ int main(int argc, const char *argv[])
     reader.setFileName(s.input);
     try {
       reader.open(I);
-    } catch (const vpException &e) {
+    }
+    catch (const vpException &e) {
       std::cout << "Catch an exception: " << e.getStringMessage() << std::endl;
       std::cout << "Check if input images name \"" << s.input << "\" set in " << opt_inputSettingsFile
-                << " config file is correct..." << std::endl;
+        << " config file is correct..." << std::endl;
       return EXIT_FAILURE;
     }
 
-#ifdef VISP_HAVE_X11
-    vpDisplayX d(I, vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI d(I, vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK d(I, vpDisplay::SCALE_AUTO);
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV d(I, vpDisplay::SCALE_AUTO);
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    std::shared_ptr<vpDisplay> d = vpDisplayFactory::createDisplay(I, vpDisplay::SCALE_AUTO);
+#else
+    d = vpDisplayFactory::allocateDisplay(I, vpDisplay::SCALE_AUTO);
 #endif
 
     vpCameraParameters cam_init;
@@ -190,6 +204,11 @@ int main(int argc, const char *argv[])
       if (!vpIoTools::checkFilename(opt_init_camera_xml_file)) {
         std::cout << "Input camera file \"" << opt_init_camera_xml_file << "\" doesn't exist!" << std::endl;
         std::cout << "Modify [--init-from-xml <camera-init.xml>] option value" << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+        if (display != nullptr) {
+          delete display;
+        }
+#endif
         return EXIT_FAILURE;
       }
       init_from_xml = true;
@@ -200,11 +219,17 @@ int main(int argc, const char *argv[])
       if (parser.parse(cam_init, opt_init_camera_xml_file, opt_camera_name,
                        vpCameraParameters::perspectiveProjWithoutDistortion) != vpXmlParserCamera::SEQUENCE_OK) {
         std::cout << "Unable to find camera with name \"" << opt_camera_name
-                  << "\" in file: " << opt_init_camera_xml_file << std::endl;
+          << "\" in file: " << opt_init_camera_xml_file << std::endl;
         std::cout << "Modify [--camera-name <name>] option value" << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+        if (display != nullptr) {
+          delete display;
+        }
+#endif
         return EXIT_FAILURE;
       }
-    } else {
+    }
+    else {
       std::cout << "Initialize camera parameters with default values " << std::endl;
       // Initialize camera parameters
       double px = cam_init.get_px();
@@ -292,7 +317,7 @@ int main(int argc, const char *argv[])
         }
         if (!calib_status) {
           std::cout << "frame: " << frame_name << ", unable to calibrate from single image, image rejected"
-                    << std::endl;
+            << std::endl;
           found = false;
         }
       }
@@ -309,7 +334,8 @@ int main(int argc, const char *argv[])
                                "A click to process the next image", vpColor::green);
         vpDisplay::flush(I);
         vpDisplay::getClick(I);
-      } else {
+      }
+      else {
         vpDisplay::flush(I);
         vpTime::wait(s.tempo * 1000);
       }
@@ -319,6 +345,11 @@ int main(int argc, const char *argv[])
     // Calibrate by a non linear method based on virtual visual servoing
     if (calibrator.empty()) {
       std::cerr << "Unable to calibrate. Image processing failed !" << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+      if (display != nullptr) {
+        delete display;
+      }
+#endif
       return EXIT_FAILURE;
     }
 
@@ -345,8 +376,8 @@ int main(int argc, const char *argv[])
 
     vpImage<vpRGBa> I_color;
     vpImageConvert::convert(imgColor, I_color);
-    d.close(I);
-    d.init(I_color, 0, 0, "Calibration pattern occupancy");
+    d->close(I);
+    d->init(I_color, 0, 0, "Calibration pattern occupancy");
 
     vpDisplay::display(I_color);
     vpDisplay::displayText(I_color, 15 * vpDisplay::getDownScalingFactor(I_color),
@@ -364,8 +395,8 @@ int main(int argc, const char *argv[])
       vpTime::wait(s.tempo * 1000);
     }
 
-    d.close(I_color);
-    d.init(I);
+    d->close(I_color);
+    d->init(I);
 
     std::stringstream ss_additional_info;
     ss_additional_info << "<date>" << vpTime::getDateTime() << "</date>";
@@ -397,7 +428,7 @@ int main(int argc, const char *argv[])
     if (vpCalibration::computeCalibrationMulti(vpCalibration::CALIB_VIRTUAL_VS, calibrator, cam, error, false) ==
         EXIT_SUCCESS) {
       std::cout << cam << std::endl;
-      vpDisplay::setTitle(I, "Without distorsion results");
+      vpDisplay::setTitle(I, "Without distortion results");
 
       for (size_t i = 0; i < calibrator.size(); i++) {
         double reproj_error = sqrt(calibrator[i].getResidual() / calibrator[i].get_npt());
@@ -448,16 +479,22 @@ int main(int argc, const char *argv[])
       if (xml.save(cam, opt_output_file_name.c_str(), opt_camera_name, I.getWidth(), I.getHeight()) ==
           vpXmlParserCamera::SEQUENCE_OK)
         std::cout << "Camera parameters without distortion successfully saved in \"" << opt_output_file_name << "\""
-                  << std::endl;
+        << std::endl;
       else {
         std::cout << "Failed to save the camera parameters without distortion in \"" << opt_output_file_name << "\""
-                  << std::endl;
+          << std::endl;
         std::cout << "A file with the same name exists. Remove it to be able "
-                     "to save the parameters..."
-                  << std::endl;
+          "to save the parameters..."
+          << std::endl;
       }
-    } else {
+    }
+    else {
       std::cout << "Calibration without distortion failed." << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+      if (display != nullptr) {
+        delete display;
+      }
+#endif
       return EXIT_FAILURE;
     }
     vpCameraParameters cam_without_dist = cam;
@@ -467,7 +504,7 @@ int main(int argc, const char *argv[])
     if (vpCalibration::computeCalibrationMulti(vpCalibration::CALIB_VIRTUAL_VS_DIST, calibrator, cam, error, false) ==
         EXIT_SUCCESS) {
       std::cout << cam << std::endl;
-      vpDisplay::setTitle(I, "With distorsion results");
+      vpDisplay::setTitle(I, "With distortion results");
 
       for (size_t i = 0; i < calibrator.size(); i++) {
         double reproj_error = sqrt(calibrator[i].getResidual_dist() / calibrator[i].get_npt());
@@ -515,13 +552,13 @@ int main(int argc, const char *argv[])
 
       vpImage<unsigned char> I_undist;
       vpImage<unsigned char> I_dist_undist(I.getHeight(), 2 * I.getWidth());
-      d.close(I);
-      d.init(I_dist_undist, 0, 0, "Straight lines have to be straight - distorted image / undistorted image");
+      d->close(I);
+      d->init(I_dist_undist, 0, 0, "Straight lines have to be straight - distorted image / undistorted image");
 
       for (size_t idx = 0; idx < calib_info.size(); idx++) {
         std::cout << "\nThis tool computes the line fitting error (mean distance error) on image points extracted from "
-                     "the raw distorted image."
-                  << std::endl;
+          "the raw distorted image."
+          << std::endl;
 
         I = calib_info[idx].m_img;
         vpImageTools::undistort(I, cam, I_undist);
@@ -546,8 +583,8 @@ int main(int argc, const char *argv[])
           double line_fitting_error = vpMath::lineFitting(current_line, a, b, c);
           double line_fitting_error_undist = vpMath::lineFitting(current_line_undist, a, b, c);
           std::cout << calib_info[idx].m_frame_name << " line " << i + 1
-                    << " fitting error on distorted points: " << line_fitting_error
-                    << " ; on undistorted points: " << line_fitting_error_undist << std::endl;
+            << " fitting error on distorted points: " << line_fitting_error
+            << " ; on undistorted points: " << line_fitting_error_undist << std::endl;
 
           vpImagePoint ip1 = current_line.front();
           vpImagePoint ip2 = current_line.back();
@@ -555,8 +592,8 @@ int main(int argc, const char *argv[])
         }
 
         std::cout << "\nThis tool computes the line fitting error (mean distance error) on image points extracted from "
-                     "the undistorted image"
-                  << " (vpImageTools::undistort())." << std::endl;
+          "the undistorted image"
+          << " (vpImageTools::undistort())." << std::endl;
         cv::Mat cvI;
         std::vector<cv::Point2f> pointBuf;
         vpImageConvert::convert(I_undist, cvI);
@@ -579,13 +616,14 @@ int main(int argc, const char *argv[])
             double a = 0, b = 0, c = 0;
             double line_fitting_error = vpMath::lineFitting(current_line, a, b, c);
             std::cout << calib_info[idx].m_frame_name << " undistorted image, line " << i + 1
-                      << " fitting error: " << line_fitting_error << std::endl;
+              << " fitting error: " << line_fitting_error << std::endl;
 
             vpImagePoint ip1 = current_line.front() + vpImagePoint(0, I.getWidth());
             vpImagePoint ip2 = current_line.back() + vpImagePoint(0, I.getWidth());
             vpDisplay::displayLine(I_dist_undist, ip1, ip2, vpColor::red);
           }
-        } else {
+        }
+        else {
           std::string msg("Unable to detect grid on undistorted image");
           std::cout << msg << std::endl;
           std::cout << "Check that the grid is not too close to the image edges" << std::endl;
@@ -627,39 +665,68 @@ int main(int argc, const char *argv[])
       if (xml.save(cam, opt_output_file_name.c_str(), opt_camera_name, I.getWidth(), I.getHeight(),
                    ss_additional_info.str()) == vpXmlParserCamera::SEQUENCE_OK)
         std::cout << "Camera parameters without distortion successfully saved in \"" << opt_output_file_name << "\""
-                  << std::endl;
+        << std::endl;
       else {
         std::cout << "Failed to save the camera parameters without distortion in \"" << opt_output_file_name << "\""
-                  << std::endl;
+          << std::endl;
         std::cout << "A file with the same name exists. Remove it to be able "
-                     "to save the parameters..."
-                  << std::endl;
+          "to save the parameters..."
+          << std::endl;
       }
       std::cout << std::endl;
       std::cout << "Estimated pose using vpPoseVector format: [tx ty tz tux tuy tuz] with translation in meter and "
-                   "rotation in rad"
-                << std::endl;
+        "rotation in rad"
+        << std::endl;
       for (unsigned int i = 0; i < calibrator.size(); i++)
         std::cout << "Estimated pose on input data extracted from " << calib_info[i].m_frame_name << ": "
-                  << vpPoseVector(calibrator[i].cMo_dist).t() << std::endl;
-    } else {
+        << vpPoseVector(calibrator[i].cMo_dist).t() << std::endl;
+    }
+    else {
       std::cout << "Calibration with distortion failed." << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+      if (display != nullptr) {
+        delete display;
+      }
+#endif
       return EXIT_FAILURE;
     }
 
     std::cout << "\nCamera calibration succeeded. Results are savec in " << "\"" << opt_output_file_name << "\"" << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
 }
 #else
 int main()
 {
-  std::cout << "OpenCV 2.3.0 or higher is requested to run the calibration." << std::endl;
-  std::cout << "Tip:" << std::endl;
-  std::cout << "- Install OpenCV, configure again ViSP using cmake and build again this example" << std::endl;
+#if !defined(HAVE_OPENCV_IMGPROC)
+  std::cout << "This example requires OpenCV imgproc module." << std::endl;
+#endif
+#if !defined(HAVE_OPENCV_HIGHGUI)
+  std::cout << "This example requires OpenCV highgui module." << std::endl;
+#endif
+#if (VISP_HAVE_OPENCV_VERSION < 0x050000) && !defined(HAVE_OPENCV_CALIB3D)
+  std::cout << "This example requires OpenCV calib3d module." << std::endl;
+#endif
+#if (VISP_HAVE_OPENCV_VERSION >= 0x050000) && !defined(HAVE_OPENCV_3D)
+  std::cout << "This example requires OpenCV 3d module." << std::endl;
+#endif
+#if !defined(VISP_HAVE_PUGIXML)
+  std::cout << "pugixml built-in 3rdparty is requested to run the calibration." << std::endl;
+#endif
   return EXIT_SUCCESS;
-}
+  }
 #endif

@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,41 +29,38 @@
  *
  * Description:
  * Directory management.
- *
- * Authors:
- * Fabien Spindler
- * Souriya Trinh
- *
- *****************************************************************************/
-
-#ifndef _vpConvert_h_
-#define _vpConvert_h_
+ */
 
 /*!
   \file vpConvert.h
   \brief Tools for type or general conversion.
  */
 
+#ifndef VP_CONVERT_H
+#define VP_CONVERT_H
+
 #include <visp3/core/vpConfig.h>
 
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020101)
-#include <opencv2/core/core.hpp>
+#if defined(VISP_HAVE_OPENCV) && (defined(HAVE_OPENCV_FEATURES2D) || defined(HAVE_OPENCV_FEATURES))
+
+#if defined(HAVE_OPENCV_FEATURES2D)
 #include <opencv2/features2d/features2d.hpp>
+#elif defined(HAVE_OPENCV_FEATURES)
+#include <opencv2/features.hpp>
 #endif
 
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/core/vpPoint.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpConvert
   \ingroup group_core_bridges
   Bridges over other frameworks like OpenCV.
- */
+*/
 class VISP_EXPORT vpConvert
 {
-
 public:
-#if (VISP_HAVE_OPENCV_VERSION >= 0x020101)
   static void convertFromOpenCV(const cv::KeyPoint &from, vpImagePoint &to);
   static void convertFromOpenCV(const cv::Point2f &from, vpImagePoint &to);
   static void convertFromOpenCV(const cv::Point2d &from, vpImagePoint &to);
@@ -107,7 +103,7 @@ private:
   static cv::Point3f vpObjectPointToPoint3f(const vpPoint &point);
   static cv::Point3d vpObjectPointToPoint3d(const vpPoint &point);
 
-#endif
 };
-
+END_VISP_NAMESPACE
+#endif
 #endif

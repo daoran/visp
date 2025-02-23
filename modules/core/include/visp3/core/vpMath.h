@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,22 +29,16 @@
  *
  * Description:
  * Simple mathematical function not available in the C math library (math.h).
- *
- * Authors:
- * Eric Marchand
- * Fabien Spindler
- * Julien Dufour
- *
- *****************************************************************************/
+ */
 
 /*!
-  \file vpMath.h
-  \brief Provides simple Math computation that are not available in
-  the C mathematics library (math.h)
-*/
+ * \file vpMath.h
+ * \brief Provides simple Math computation that are not available in
+ * the C mathematics library (math.h)
+ */
 
-#ifndef vpMATH_HH
-#define vpMATH_HH
+#ifndef VP_MATH_H
+#define VP_MATH_H
 
 #include <visp3/core/vpConfig.h>
 
@@ -56,7 +49,9 @@
 // Define _USE_MATH_DEFINES before including <math.h> to expose these macro
 // definitions for common math constants.  These are placed under an #ifdef
 // since these commonly-defined names are not part of the C or C++ standards
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
+#endif
 #endif
 #include <math.h>
 #include <vector>
@@ -82,8 +77,22 @@
 
 #endif
 
+#ifndef M_PI_FLOAT
+#define M_PI_FLOAT 3.14159265358979323846f
+#endif
+
+#ifndef M_PI_2_FLOAT
+#define M_PI_2_FLOAT (M_PI_FLOAT / 2.0f)
+#endif
+
+#ifndef M_PI_4_FLOAT
+#define M_PI_4_FLOAT (M_PI_FLOAT / 4.0f)
+#endif
+
 #include <visp3/core/vpException.h>
 #include <visp3/core/vpImagePoint.h>
+
+BEGIN_VISP_NAMESPACE
 
 class vpPoint;
 class vpHomogeneousMatrix;
@@ -93,32 +102,99 @@ class vpRxyzVector;
 class vpTranslationVector;
 
 /*!
-  \class vpMath
-  \ingroup group_core_math_tools
-  \brief Provides simple mathematics computation tools that are not
-  available in the C mathematics library (math.h)
-
+ * \class vpMath
+ * \ingroup group_core_math_tools
+ * \brief Provides simple mathematics computation tools that are not
+ * available in the C mathematics library (math.h)
 */
 class VISP_EXPORT vpMath
 {
 public:
   /*!
-    Convert an angle in radians into degrees.
-
-    \param rad : Angle in radians.
-    \return Angle converted in degrees.
-  */
+   * Convert an angle in radians into degrees.
+   *
+   * \param rad : Angle in radians.
+   * \return Angle converted in degrees.
+   */
   static inline double deg(double rad) { return (rad * 180.0) / M_PI; }
 
   static vpColVector deg(const vpRotationVector &r);
   static vpColVector deg(const vpColVector &r);
 
   /*!
-    Convert an angle in degrees into radian.
-    \param deg : Angle in degrees.
-    \return Angle converted in radian.
-  */
+   * Convert an angle in degrees into radian.
+   * \param deg : Angle in degrees.
+   * \return Angle converted in radians.
+   */
   static inline double rad(double deg) { return (deg * M_PI) / 180.0; }
+
+  static vpColVector rad(const vpColVector &r);
+
+  /*!
+   * Convert angle between \f$-\pi\f$ and \f$\pi\f$.
+   *
+   * \param[in] theta The input angle we want to ensure it is in the interval \f$[-\pi ; \pi]\f$.
+   * \return The corresponding angle in the interval \f$[-\pi ; \pi]\f$.
+   */
+  static float getAngleBetweenMinPiAndPi(const float &theta)
+  {
+    float theta1 = theta;
+    if (theta1 > M_PI_FLOAT) {
+      theta1 -= 2.0f * M_PI_FLOAT;
+    }
+    else if (theta1 <= -M_PI_FLOAT) {
+      theta1 += 2.0f * M_PI_FLOAT;
+    }
+    return theta1;
+  }
+
+  /*!
+   * Convert angle between \f$-\pi\f$ and \f$\pi\f$.
+   *
+   * \param[in] theta The input angle we want to ensure it is in the interval \f$[-\pi ; \pi]\f$.
+   * \return The corresponding angle in the interval \f$[-\pi ; \pi]\f$.
+   */
+  static double getAngleBetweenMinPiAndPi(const double &theta)
+  {
+    double theta1 = theta;
+    if (theta1 > M_PI) {
+      theta1 -= 2.0 * M_PI;
+    }
+    else if (theta1 < -M_PI) {
+      theta1 += 2.0 * M_PI;
+    }
+    return theta1;
+  }
+
+  /**
+   * \brief Gives the rest of \b value divided by \b modulo when
+   * the quotient can only be an integer.
+   *
+   * \param[in] value The value we want to know the rest in the "modulo" operation.
+   * \param[in] modulo The divider.
+   * \return float The rest as in a modulo operation.
+   */
+  static float modulo(const float &value, const float &modulo)
+  {
+    float quotient = std::floor(value / modulo);
+    float rest = value - (quotient * modulo);
+    return rest;
+  }
+
+  /**
+   * \brief Gives the rest of \b value divided by \b modulo when
+   * the quotient can only be an integer.
+   *
+   * \param[in] value The value we want to know the rest in the "modulo" operation.
+   * \param[in] modulo The divider.
+   * \return double The rest as in a modulo operation.
+   */
+  static double modulo(const double &value, const double &modulo)
+  {
+    double quotient = std::floor(value / modulo);
+    double rest = value - (quotient * modulo);
+    return rest;
+  }
 
   /*!
     Compute x square value.
@@ -141,7 +217,10 @@ public:
   */
   template <typename T> static inline T clamp(const T &v, const T &lower, const T &upper)
   {
-#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_17)
+    // Check if std:c++17 or higher.
+    // Here we cannot use (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_17) when ViSP
+    // is used as a 3rdparty. See issue #1274
+#if ((__cplusplus >= 201703L) || (defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L)))
     return std::clamp(v, lower, upper);
 #else
     if (upper < lower) {
@@ -158,13 +237,13 @@ public:
   static inline int sign(double x);
 
   // test if a number equals 0 (with threshold value)
-  static inline bool nul(double x, double s = 0.001);
+  static inline bool nul(double x, double threshold = 0.001);
 
   // test if two numbers are equals (with a user defined threshold)
-  static inline bool equal(double x, double y, double s = 0.001);
+  static inline bool equal(double x, double y, double threshold = 0.001);
 
   // test if a number is greater than another (with a user defined threshold)
-  static inline bool greater(double x, double y, double s = 0.001);
+  static inline bool greater(double x, double y, double threshold = 0.001);
 
   /*!
     Find the maximum between two numbers (or other).
@@ -217,23 +296,25 @@ public:
   static bool isInf(float value);
   static bool isFinite(double value);
   static bool isFinite(float value);
+  static bool isNumber(const std::string &str);
 
   static double lineFitting(const std::vector<vpImagePoint> &imPts, double &a, double &b, double &c);
 
-  template <typename _Tp> static inline _Tp saturate(unsigned char v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(char v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(unsigned short v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(short v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(unsigned v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(int v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(float v) { return _Tp(v); }
-  template <typename _Tp> static inline _Tp saturate(double v) { return _Tp(v); }
+  template <typename Tp> static inline Tp saturate(unsigned char v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(char v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(unsigned short v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(short v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(unsigned v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(int v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(float v) { return Tp(v); }
+  template <typename Tp> static inline Tp saturate(double v) { return Tp(v); }
 
   static double getMean(const std::vector<double> &v);
   static double getMedian(const std::vector<double> &v);
   static double getStdev(const std::vector<double> &v, bool useBesselCorrection = false);
 
   static int modulo(int a, int n);
+  static unsigned int modulo(unsigned int a, unsigned int n);
 
   static vpHomogeneousMatrix ned2ecef(double lonDeg, double latDeg, double radius);
   static vpHomogeneousMatrix enu2ecef(double lonDeg, double latDeg, double radius);
@@ -267,18 +348,20 @@ public:
 
     double delta = (end - start) / (num - 1);
 
-    for (int i = 0; i < num - 1; i++) {
-      linspaced.push_back(start + delta * i);
+    for (int i = 0; i < (num - 1); ++i) {
+      linspaced.push_back(start + (delta * i));
     }
     linspaced.push_back(end); // I want to ensure that start and end
-                              // are exactly the same as the input
+    // are exactly the same as the input
     return linspaced;
   }
 
   static std::vector<std::pair<double, double> > computeRegularPointsOnSphere(unsigned int maxPoints);
+
+  typedef vpHomogeneousMatrix(*LongLattToHomogeneous)(double lonDeg, double latDeg, double radius);
   static std::vector<vpHomogeneousMatrix>
-  getLocalTangentPlaneTransformations(const std::vector<std::pair<double, double> > &lonlatVec, double radius,
-                                      vpHomogeneousMatrix (*toECEF)(double lonDeg, double latDeg, double radius));
+    getLocalTangentPlaneTransformations(const std::vector<std::pair<double, double> > &lonlatVec, double radius,
+      LongLattToHomogeneous func);
 
   static vpHomogeneousMatrix lookAt(const vpColVector &from, const vpColVector &to, vpColVector tmp);
 
@@ -295,8 +378,9 @@ private:
 */
 double vpMath::fact(unsigned int x)
 {
-  if ((x == 1) || (x == 0))
+  if ((x == 1) || (x == 0)) {
     return 1;
+  }
   return x * fact(x - 1);
 }
 
@@ -310,8 +394,9 @@ double vpMath::fact(unsigned int x)
 */
 long double vpMath::comb(unsigned int n, unsigned int p)
 {
-  if (n == p)
+  if (n == p) {
     return 1;
+  }
   return fact(n) / (fact(n - p) * fact(p));
 }
 
@@ -324,14 +409,14 @@ long double vpMath::comb(unsigned int n, unsigned int p)
 */
 int vpMath::round(double x)
 {
-#if defined(VISP_HAVE_FUNC_ROUND)
+#if defined(VISP_HAVE_FUNC_STD_ROUND)
+  return static_cast<int>(std::round(x));
+#elif defined(VISP_HAVE_FUNC_ROUND)
   //:: to design the global namespace and avoid to call recursively
   // vpMath::round
-  return (int)::round(x);
-#elif defined(VISP_HAVE_FUNC_STD_ROUND)
-  return (int)std::round(x);
+  return static_cast<int>(::round(x));
 #else
-  return (x > 0.0) ? ((int)floor(x + 0.5)) : ((int)ceil(x - 0.5));
+  return (x > 0.0) ? (static_cast<int>(floor(x + 0.5))) : (static_cast<int>(ceil(x - 0.5)));
 #endif
 }
 
@@ -343,62 +428,67 @@ int vpMath::round(double x)
 */
 int vpMath::sign(double x)
 {
-  if (fabs(x) < std::numeric_limits<double>::epsilon())
+  if (fabs(x) < std::numeric_limits<double>::epsilon()) {
     return 0;
+  }
   else {
-    if (x < 0)
+    if (x < 0) {
       return -1;
-    else
+    }
+    else {
       return 1;
+    }
   }
 }
 
 /*!
-  Compares  \f$ | x | \f$ to \f$ s \f$.
+  Compares \f$ | x | \f$ to `threshold`.
   \param x : Value to test.
-  \param s : Tolerance threshold
-  \return true if \f$ | x | < s \f$.
+  \param threshold : Tolerance threshold
+  \return true if \f$ | x | <\f$ `threshold`.
 */
-bool vpMath::nul(double x, double s) { return (fabs(x) < s); }
+bool vpMath::nul(double x, double threshold) { return (fabs(x) < threshold); }
 
 /*!
-  Compares  \f$ | x - y | \f$ to \f$ s \f$.
+  Compares \f$ | x - y | \f$ to `threshold`.
   \param x : x value.
   \param y : y value.
-  \param s : Tolerance threshold.
-  \return true if \f$ | x - y | < s \f$.
+  \param threshold : Tolerance threshold.
+  \return true if \f$ | x - y | <\f$ `threshold`.
 */
-bool vpMath::equal(double x, double y, double s) { return (nul(x - y, s)); }
+bool vpMath::equal(double x, double y, double threshold) { return (nul(x - y, threshold)); }
 
 /*!
-  Compares  \f$ x \f$ to \f$ y - s \f$.
+  Compares \f$ x \f$ to \f$ y -\f$ `threshold`.
   \param x : x value.
   \param y : y value.
-  \param s : Tolerance threshold.
-  \return true if \f$ x > y - s \f$.
+  \param threshold : Tolerance threshold.
+  \return true if \f$ x > y -\f$ `threshold`.
 */
-bool vpMath::greater(double x, double y, double s) { return (x > (y - s)); }
+bool vpMath::greater(double x, double y, double threshold) { return (x > (y - threshold)); }
 
 /*!
 
- Sigmoid function between [x0,x1] with \f$ s(x)=0 if x\le x0\f$ and \f$ s(x)=1
-if x \ge x1 \f$
+  Sigmoid function between [x0,x1] with \f$ s(x)=0 if x\le x0\f$ and \f$ s(x)=1
+  if x \ge x1 \f$
   \param x : Value of x.
   \param x0 : Lower bound (default 0).
   \param x1 : Upper bound (default 1).
   \param n : Degree of the exponential (default 12).
 
-\return Sigmoid value \f$1/(1+exp(-n*((x-x0)/(x1-x0)-0.5)))\f$
+  \return Sigmoid value \f$1/(1+exp(-n*((x-x0)/(x1-x0)-0.5)))\f$
  */
 double vpMath::sigmoid(double x, double x0, double x1, double n)
 {
-  if (x < x0)
+  if (x < x0) {
     return 0.;
-  else if (x > x1)
+  }
+  else if (x > x1) {
     return 1.;
+  }
   double l0 = 1. / (1. + exp(0.5 * n));
   double l1 = 1. / (1. + exp(-0.5 * n));
-  return (1. / (1. + exp(-n * ((x - x0) / (x1 - x0) - 0.5))) - l0) / (l1 - l0);
+  return ((1. / (1. + exp(-n * (((x - x0) / (x1 - x0)) - 0.5)))) - l0) / (l1 - l0);
 }
 
 // unsigned char
@@ -409,32 +499,37 @@ template <> inline unsigned char vpMath::saturate<unsigned char>(char v)
   // leading to (int)(char -127) = 129.
   // On little endian arch, CHAR_MIN=-127 and CHAR_MAX=128 leading to
   // (int)(char -127) = -127.
-  if (std::numeric_limits<char>::is_signed)
-    return (unsigned char)(((std::max))((int)v, 0));
-  else
-    return (unsigned char)((unsigned int)v > SCHAR_MAX ? 0 : v);
+  if (std::numeric_limits<char>::is_signed) {
+    return static_cast<unsigned char>(std::max<int>(static_cast<int>(v), 0));
+  }
+  else {
+    return static_cast<unsigned char>(static_cast<unsigned int>(v) > SCHAR_MAX ? 0 : v);
+  }
 }
 
 template <> inline unsigned char vpMath::saturate<unsigned char>(unsigned short v)
 {
-  return (unsigned char)((std::min))((unsigned int)v, (unsigned int)UCHAR_MAX);
+  return static_cast<unsigned char>(std::min<unsigned int>(static_cast<unsigned int>(v), static_cast<unsigned int>(UCHAR_MAX)));
 }
 
 template <> inline unsigned char vpMath::saturate<unsigned char>(int v)
 {
-  return (unsigned char)((unsigned int)v <= UCHAR_MAX ? v : v > 0 ? UCHAR_MAX : 0);
+  return static_cast<unsigned char>(static_cast<unsigned int>(v) <= UCHAR_MAX ? v : v > 0 ? UCHAR_MAX : 0);
 }
 
-template <> inline unsigned char vpMath::saturate<unsigned char>(short v) { return saturate<unsigned char>((int)v); }
+template <> inline unsigned char vpMath::saturate<unsigned char>(short v)
+{
+  return saturate<unsigned char>(static_cast<int>(v));
+}
 
 template <> inline unsigned char vpMath::saturate<unsigned char>(unsigned int v)
 {
-  return (unsigned char)((std::min))(v, (unsigned int)UCHAR_MAX);
+  return static_cast<unsigned char>(std::min<unsigned int>(v, static_cast<unsigned int>(UCHAR_MAX)));
 }
 
 template <> inline unsigned char vpMath::saturate<unsigned char>(float v)
 {
-  int iv = vpMath::round(v);
+  int iv = vpMath::round(static_cast<double>(v));
   return saturate<unsigned char>(iv);
 }
 
@@ -445,23 +540,29 @@ template <> inline unsigned char vpMath::saturate<unsigned char>(double v)
 }
 
 // char
-template <> inline char vpMath::saturate<char>(unsigned char v) { return (char)((std::min))((int)v, SCHAR_MAX); }
+template <> inline char vpMath::saturate<char>(unsigned char v)
+{
+  return static_cast<char>(std::min<int>(static_cast<int>(v), SCHAR_MAX));
+}
 
 template <> inline char vpMath::saturate<char>(unsigned short v)
 {
-  return (char)((std::min))((unsigned int)v, (unsigned int)SCHAR_MAX);
+  return static_cast<char>(std::min<unsigned int>(static_cast<unsigned int>(v), static_cast<unsigned int>(SCHAR_MAX)));
 }
 
 template <> inline char vpMath::saturate<char>(int v)
 {
-  return (char)((unsigned int)(v - SCHAR_MIN) <= (unsigned int)UCHAR_MAX ? v : v > 0 ? SCHAR_MAX : SCHAR_MIN);
+  return static_cast<char>(static_cast<unsigned int>(v - SCHAR_MIN) <= static_cast<unsigned int>(UCHAR_MAX) ? v : v > 0 ? SCHAR_MAX : SCHAR_MIN);
 }
 
-template <> inline char vpMath::saturate<char>(short v) { return saturate<char>((int)v); }
+template <> inline char vpMath::saturate<char>(short v)
+{
+  return saturate<char>(static_cast<int>(v));
+}
 
 template <> inline char vpMath::saturate<char>(unsigned int v)
 {
-  return (char)((std::min))(v, (unsigned int)SCHAR_MAX);
+  return static_cast<char>(std::min<unsigned int>(v, static_cast<unsigned int>(SCHAR_MAX)));
 }
 
 template <> inline char vpMath::saturate<char>(float v)
@@ -484,30 +585,32 @@ template <> inline unsigned short vpMath::saturate<unsigned short>(char v)
   // leading to (int)(char -127) = 129.
   // On little endian arch, CHAR_MIN=-127 and CHAR_MAX=128 leading to
   // (int)(char -127) = -127.
-  if (std::numeric_limits<char>::is_signed)
-    return (unsigned char)(((std::max))((int)v, 0));
-  else
-    return (unsigned char)((unsigned int)v > SCHAR_MAX ? 0 : v);
+  if (std::numeric_limits<char>::is_signed) {
+    return static_cast<unsigned short>(std::max<int>(static_cast<int>(v), 0));
+  }
+  else {
+    return static_cast<unsigned short>(static_cast<unsigned int>(v) > SCHAR_MAX ? 0 : v);
+  }
 }
 
 template <> inline unsigned short vpMath::saturate<unsigned short>(short v)
 {
-  return (unsigned short)((std::max))((int)v, 0);
+  return static_cast<unsigned short>(std::max<int>(static_cast<int>(v), 0));
 }
 
 template <> inline unsigned short vpMath::saturate<unsigned short>(int v)
 {
-  return (unsigned short)((unsigned int)v <= (unsigned int)USHRT_MAX ? v : v > 0 ? USHRT_MAX : 0);
+  return static_cast<unsigned short>(static_cast<unsigned int>(v) <= static_cast<unsigned int>(USHRT_MAX) ? v : v > 0 ? USHRT_MAX : 0);
 }
 
 template <> inline unsigned short vpMath::saturate<unsigned short>(unsigned int v)
 {
-  return (unsigned short)((std::min))(v, (unsigned int)USHRT_MAX);
+  return static_cast<unsigned short>(std::min<unsigned int>(v, static_cast<unsigned int>(USHRT_MAX)));
 }
 
 template <> inline unsigned short vpMath::saturate<unsigned short>(float v)
 {
-  int iv = vpMath::round(v);
+  int iv = vpMath::round(static_cast<double>(v));
   return vpMath::saturate<unsigned short>(iv);
 }
 
@@ -518,18 +621,21 @@ template <> inline unsigned short vpMath::saturate<unsigned short>(double v)
 }
 
 // short
-template <> inline short vpMath::saturate<short>(unsigned short v) { return (short)((std::min))((int)v, SHRT_MAX); }
+template <> inline short vpMath::saturate<short>(unsigned short v)
+{
+  return static_cast<short>(std::min<int>(static_cast<int>(v), SHRT_MAX));
+}
 template <> inline short vpMath::saturate<short>(int v)
 {
-  return (short)((unsigned int)(v - SHRT_MIN) <= (unsigned int)USHRT_MAX ? v : v > 0 ? SHRT_MAX : SHRT_MIN);
+  return static_cast<short>(static_cast<unsigned int>(v - SHRT_MIN) <= static_cast<unsigned int>(USHRT_MAX) ? v : v > 0 ? SHRT_MAX : SHRT_MIN);
 }
 template <> inline short vpMath::saturate<short>(unsigned int v)
 {
-  return (short)((std::min))(v, (unsigned int)SHRT_MAX);
+  return static_cast<short>(std::min<unsigned int>(v, static_cast<unsigned int>(SHRT_MAX)));
 }
 template <> inline short vpMath::saturate<short>(float v)
 {
-  int iv = vpMath::round(v);
+  int iv = vpMath::round(static_cast<double>(v));
   return vpMath::saturate<short>(iv);
 }
 template <> inline short vpMath::saturate<short>(double v)
@@ -539,15 +645,27 @@ template <> inline short vpMath::saturate<short>(double v)
 }
 
 // int
-template <> inline int vpMath::saturate<int>(float v) { return vpMath::round(v); }
+template <> inline int vpMath::saturate<int>(float v)
+{
+  return vpMath::round(static_cast<double>(v));
+}
 
-template <> inline int vpMath::saturate<int>(double v) { return vpMath::round(v); }
+template <> inline int vpMath::saturate<int>(double v)
+{
+  return vpMath::round(v);
+}
 
 // unsigned int
 // (Comment from OpenCV) we intentionally do not clip negative numbers, to
 // make -1 become 0xffffffff etc.
-template <> inline unsigned int vpMath::saturate<unsigned int>(float v) { return (unsigned int)vpMath::round(v); }
+template <> inline unsigned int vpMath::saturate<unsigned int>(float v)
+{
+  return static_cast<unsigned int>(vpMath::round(static_cast<double>(v)));
+}
 
-template <> inline unsigned int vpMath::saturate<unsigned int>(double v) { return (unsigned int)vpMath::round(v); }
-
+template <> inline unsigned int vpMath::saturate<unsigned int>(double v)
+{
+  return static_cast<unsigned int>(vpMath::round(v));
+}
+END_VISP_NAMESPACE
 #endif

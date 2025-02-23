@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -32,10 +32,7 @@
  * Simulation of a 2D visual servoing using 4 points with polar
  * coordinates as visual feature.
  *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 
 /*!
   \example servoSimuFourPoints2DPolarCamVelocityDisplay.cpp
@@ -56,7 +53,7 @@
 #include <visp3/core/vpConfig.h>
 #include <visp3/core/vpDebug.h>
 
-#if (defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV))
+#if defined(VISP_HAVE_DISPLAY)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,10 +65,7 @@
 #include <visp3/core/vpIoTools.h>
 #include <visp3/core/vpMath.h>
 #include <visp3/core/vpMeterPixelConversion.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/gui/vpProjectionDisplay.h>
 #include <visp3/io/vpParseArgv.h>
 #include <visp3/robot/vpSimulatorCamera.h>
@@ -82,6 +76,10 @@
 
 // List of allowed command line options
 #define GETOPTARGS "cdh"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void usage(const char *name, const char *badparam);
 bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display);
@@ -110,8 +108,8 @@ SYNOPSIS\n\
   fprintf(stdout, "\n\
 OPTIONS:                                               Default\n\
   -c\n\
-     Disable the mouse click. Useful to automaze the \n\
-     execution of this program without humain intervention.\n\
+     Disable the mouse click. Useful to automate the \n\
+     execution of this program without human intervention.\n\
 \n\
   -d \n\
      Turn off the display.\n\
@@ -148,7 +146,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
       display = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
 
     default:
@@ -159,7 +157,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -170,12 +168,20 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
 int main(int argc, const char **argv)
 {
+  // We declare the windows variables to be able to free the memory in the catch sections if needed
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> displayInt;
+  std::shared_ptr<vpDisplay> displayExt;
+#else
+  vpDisplay *displayInt = nullptr;
+  vpDisplay *displayExt = nullptr;
+#endif
   try {
     // Log file creation in /tmp/$USERNAME/log.dat
     // This file contains by line:
     // - the 6 computed camera velocities (m/s, rad/s) to achieve the task
-    // - the 6 mesured camera velocities (m/s, rad/s)
-    // - the 6 mesured joint positions (m, rad)
+    // - the 6 measured camera velocities (m/s, rad/s)
+    // - the 6 measured joint positions (m, rad)
     // - the 8 values of s - s*
     std::string username;
     // Get the user login name
@@ -194,7 +200,8 @@ int main(int argc, const char **argv)
       try {
         // Create the dirname
         vpIoTools::makeDirectory(logdirname);
-      } catch (...) {
+      }
+      catch (...) {
         std::cerr << std::endl << "ERROR:" << std::endl;
         std::cerr << "  Cannot create " << logdirname << std::endl;
         return EXIT_FAILURE;
@@ -214,30 +221,21 @@ int main(int argc, const char **argv)
       return EXIT_FAILURE;
     }
 
-// We open two displays, one for the internal camera view, the other one for
-// the external view, using either X11, GTK or GDI.
-#if defined VISP_HAVE_X11
-    vpDisplayX displayInt;
-    vpDisplayX displayExt;
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK displayInt;
-    vpDisplayGTK displayExt;
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI displayInt;
-    vpDisplayGDI displayExt;
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV displayInt;
-    vpDisplayOpenCV displayExt;
-#endif
-
     // open a display for the visualization
 
     vpImage<unsigned char> Iint(300, 300, 0);
     vpImage<unsigned char> Iext(300, 300, 0);
 
     if (opt_display) {
-      displayInt.init(Iint, 0, 0, "Internal view");
-      displayExt.init(Iext, 330, 000, "External view");
+      // We open two displays, one for the internal camera view, the other one for
+      // the external view
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+      displayInt = vpDisplayFactory::createDisplay(Iint, 0, 0, "Internal view");
+      displayExt = vpDisplayFactory::createDisplay(Iext, 330, 000, "External view");
+#else
+      displayInt = vpDisplayFactory::allocateDisplay(Iint, 0, 0, "Internal view");
+      displayExt = vpDisplayFactory::allocateDisplay(Iext, 330, 000, "External view");
+#endif
     }
     vpProjectionDisplay externalview;
 
@@ -470,17 +468,34 @@ int main(int argc, const char **argv)
       vpDisplay::flush(Iint);
       vpDisplay::getClick(Iint);
     }
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (displayInt != nullptr) {
+      delete displayInt;
+    }
+    if (displayExt != nullptr) {
+      delete displayExt;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
-    std::cout << "Catch a ViSP exception: " << e << std::endl;
-    return EXIT_FAILURE;
   }
+  catch (const vpException &e) {
+    std::cout << "Catch a ViSP exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (displayInt != nullptr) {
+      delete displayInt;
+    }
+    if (displayExt != nullptr) {
+      delete displayExt;
+  }
+#endif
+    return EXIT_FAILURE;
+}
 }
 #else
 int main()
 {
   std::cout << "You do not have X11, or GTK, or GDI (Graphical Device Interface) functionalities to display images..."
-            << std::endl;
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

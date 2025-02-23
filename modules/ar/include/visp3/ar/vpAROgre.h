@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,11 +29,7 @@
  *
  * Description:
  * Augmented Reality viewer using Ogre3D.
- *
- * Authors:
- * Bertrand Delabarre
- *
- *****************************************************************************/
+ */
 
 /*!
   \file vpAROgre.h
@@ -43,11 +38,10 @@
 
   \warning The content of this file is only available if Ogre3D and
   one of the renderer (OpenGL or DirectX) are installed.
-
 */
 
-#ifndef _vpAROgre_h_
-#define _vpAROgre_h_
+#ifndef VP_AR_OGRE_H
+#define VP_AR_OGRE_H
 
 #include <visp3/core/vpConfig.h>
 
@@ -66,10 +60,30 @@
 #include <Ogre.h>
 #include <OgreFrameListener.h>
 
-#ifdef VISP_HAVE_OIS
-#include <OIS.h>
+#if (VISP_HAVE_OGRE_VERSION >= (1<<16 | 10 <<8 | 0))
+#include <Bites/OgreBitesConfigDialog.h>
 #endif
 
+#if (VISP_HAVE_OGRE_VERSION >= (1<<16 | 11<<8 | 0))
+#include <Bites/OgreWindowEventUtilities.h>
+#endif
+
+#if (VISP_HAVE_OGRE_VERSION >= (1<<16 | 12 <<8 | 0))
+#include <OgreComponents.h>
+#elif (VISP_HAVE_OGRE_VERSION >= (1<<16 | 10 <<8 | 0))
+#include <OgreBuildSettings.h>
+#endif
+
+#if defined(OGRE_BUILD_COMPONENT_RTSHADERSYSTEM) & (VISP_HAVE_OGRE_VERSION >= (1<<16 | 10 <<8 | 0))
+#include <RTShaderSystem/OgreShaderGenerator.h>
+#include <Bites/OgreSGTechniqueResolverListener.h>
+#endif // INCLUDE_RTSHADER_SYSTEM
+
+#ifdef VISP_HAVE_OIS
+#include <ois/OIS.h>
+#endif
+
+BEGIN_VISP_NAMESPACE
 /*!
   \class vpAROgre
 
@@ -88,10 +102,10 @@
 
 */
 class VISP_EXPORT vpAROgre : public Ogre::FrameListener,
-                             public Ogre::WindowEventListener
+  public Ogre::WindowEventListener
 #ifdef VISP_HAVE_OIS
   ,
-                             public OIS::KeyListener
+  public OIS::KeyListener
 #endif
 {
 public:
@@ -125,7 +139,7 @@ public:
   */
   inline void addResource(const std::string &resourceLocation)
   {
-    mOptionnalResourceLocation.push_back(resourceLocation);
+    mOptionalResourceLocation.push_back(resourceLocation);
   }
 
   void addRotation(const std::string &sceneName, const vpRotationMatrix &wRo);
@@ -201,6 +215,8 @@ public:
     mFarClipping = dist;
     updateCameraProjection();
   }
+
+  void setMaterial(const std::string &entityName, const std::string &materialName);
 
   /*!
     Set the near distance for clipping.
@@ -280,13 +296,15 @@ public:
   */
   inline void setWindowPosition(unsigned int win_x, unsigned int win_y)
   {
-    if (mWindow == NULL) {
+    if (mWindow == nullptr) {
       throw vpException(vpException::notInitialized, "Window not initialised, cannot set its position");
     }
     mWindow->reposition(static_cast<int>(win_x), static_cast<int>(win_y));
   }
 
-  virtual void windowClosed(Ogre::RenderWindow *rw);
+  virtual bool windowClosing(Ogre::RenderWindow *rw) VP_OVERRIDE;
+
+  virtual void windowClosed(Ogre::RenderWindow *rw) VP_OVERRIDE;
 
 protected:
   virtual void init(bool bufferedKeys = false, bool hidden = false);
@@ -296,7 +314,7 @@ protected:
    * Build the 3D scene
    * Override this to show what you want
    */
-  virtual void createScene(void){};
+  virtual void createScene(void) { };
 
   virtual void closeOIS(void);
 
@@ -349,13 +367,21 @@ private:
 
   bool stopTest(const Ogre::FrameEvent &evt);
 
+  bool initialiseRTShaderSystem();
+
+  void destroyRTShaderSystem();
+
 protected:
+  static unsigned int sID;
+  static unsigned int sRTSSUsers;
   // Attributes
   Ogre::String name; /**Name of th Window*/
+  bool mInitialized; /** True once init(bool, bool) has been called.*/
 
   // OGRE 3D System
   Ogre::Root *mRoot;             /** Application's root */
   Ogre::Camera *mCamera;         /** Camera */
+  Ogre::String mSceneManagerName; /**Name of the scene manager*/
   Ogre::SceneManager *mSceneMgr; /** Scene manager */
   Ogre::RenderWindow *mWindow;   /** Display window */
   Ogre::String mResourcePath;    /** Path to resources.cfg */
@@ -366,6 +392,11 @@ protected:
   OIS::InputManager *mInputManager;
   OIS::Keyboard *mKeyboard;
 #endif
+
+#if defined(OGRE_BUILD_COMPONENT_RTSHADERSYSTEM) & (VISP_HAVE_OGRE_VERSION >= (1<<16 | 10 <<8 | 0))
+  Ogre::RTShader::ShaderGenerator *mShaderGenerator; // The Shader generator instance.
+  OgreBites::SGTechniqueResolverListener *mMaterialMgrListener; // Shader generator material manager listener.
+#endif // INCLUDE_RTSHADER_SYSTEM
 
   // ViSP AR System
   bool keepOn;                                     /** Has the application received a signal to stop(false) or not
@@ -388,10 +419,10 @@ protected:
   bool mshowConfigDialog; /** if true, shows the dialog window (used to set
                              the display options) */
 
-  std::list<std::string> mOptionnalResourceLocation; /** Optional resource location (used to
+  std::list<std::string> mOptionalResourceLocation; /** Optional resource location (used to
                                                         load mesh and material) */
 };
-
+END_VISP_NAMESPACE
 #endif // VISP_HAVE_OGRE
 
 #endif

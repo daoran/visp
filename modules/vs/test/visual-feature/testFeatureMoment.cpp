@@ -1,7 +1,6 @@
-/****************************************************************************
- *
+/*
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2024 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -30,11 +29,12 @@
  *
  * Description:
  * Example of visual servoing with moments using a polygon as object container
- *
- * Authors:
- * Filip Novotny
- *
- *****************************************************************************/
+ */
+
+/*!
+  \example testFeatureMoment.cpp
+ */
+
 #include <visp3/core/vpDebug.h>
 #include <visp3/core/vpHomogeneousMatrix.h>
 #include <visp3/core/vpMomentCommon.h>
@@ -47,12 +47,16 @@
 #include <iostream>
 #include <limits>
 
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
+
 // initialize scene in the interface
 void initScene(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo, vpMomentObject &src,
-               vpMomentObject &dst);
+  vpMomentObject &dst);
 
 vpMatrix execute(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo, vpMomentObject &src,
-                 vpMomentObject &dst); // launch the test
+  vpMomentObject &dst); // launch the test
 void planeToABC(const vpPlane &pl, double &A, double &B, double &C);
 int test(double x, double y, double z, double alpha);
 
@@ -76,7 +80,8 @@ int main()
       return EXIT_FAILURE;
     else
       return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
     return EXIT_FAILURE;
   }
@@ -99,7 +104,7 @@ int test(double x, double y, double z, double alpha)
 
   // init and run the simulation
   initScene(cMo, cdMo, src, dst); // initialize graphical scene (for
-                                  // interface)
+  // interface)
 
   vpMatrix mat = execute(cMo, cdMo, src, dst);
 
@@ -157,13 +162,13 @@ int test(double x, double y, double z, double alpha)
 }
 
 void initScene(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo, vpMomentObject &src,
-               vpMomentObject &dst)
+  vpMomentObject &dst)
 {
   std::vector<vpPoint> src_pts;
   std::vector<vpPoint> dst_pts;
 
-  double x[5] = {0.2, 0.2, -0.2, -0.2, 0.2};
-  double y[5] = {-0.1, 0.1, 0.1, -0.1, -0.1};
+  double x[5] = { 0.2, 0.2, -0.2, -0.2, 0.2 };
+  double y[5] = { -0.1, 0.1, 0.1, -0.1, -0.1 };
   int nbpoints = 4;
 
   for (int i = 0; i < nbpoints; i++) {
@@ -184,10 +189,9 @@ void initScene(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo, 
 }
 
 vpMatrix execute(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo, vpMomentObject &src,
-                 vpMomentObject &dst)
+  vpMomentObject &dst)
 {
-  vpServo::vpServoIteractionMatrixType interaction_type = vpServo::CURRENT;
-  ; // current or desired
+  vpServo::vpServoIteractionMatrixType interaction_type = vpServo::CURRENT; // current or desired
 
   vpServo task;
   task.setServo(vpServo::EYEINHAND_CAMERA);
@@ -218,10 +222,10 @@ vpMatrix execute(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo
   ////////////////////////////////////
   // don't need to be specific, vpMomentCommon automatically loads
   // Xg,Yg,An,Ci,Cj,Alpha moments
-  vpMomentCommon moments(vpMomentCommon ::getSurface(dst), vpMomentCommon::getMu3(dst), vpMomentCommon::getAlpha(dst),
-                         vec[2]);
+  vpMomentCommon moments(vpMomentCommon::getSurface(dst), vpMomentCommon::getMu3(dst), vpMomentCommon::getAlpha(dst),
+    vec[2]);
   vpMomentCommon momentsDes(vpMomentCommon::getSurface(dst), vpMomentCommon::getMu3(dst), vpMomentCommon::getAlpha(dst),
-                            vec[2]);
+    vec[2]);
   // same thing with common features
   vpFeatureMomentCommon featureMoments(moments);
   vpFeatureMomentCommon featureMomentsDes(momentsDes);
@@ -240,7 +244,7 @@ vpMatrix execute(const vpHomogeneousMatrix &cMo, const vpHomogeneousMatrix &cdMo
   task.addFeature(featureMoments.getFeatureAn(), featureMomentsDes.getFeatureAn());
   // the moments are different in case of a symmetric object
   task.addFeature(featureMoments.getFeatureCInvariant(), featureMomentsDes.getFeatureCInvariant(),
-                  (1 << 10) | (1 << 11));
+    (1 << 10) | (1 << 11));
   task.addFeature(featureMoments.getFeatureAlpha(), featureMomentsDes.getFeatureAlpha());
 
   task.setLambda(0.4);

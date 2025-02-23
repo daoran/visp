@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -31,14 +31,12 @@
  * Description:
  * Generation of random number with uniform and normal probability density.
  *
- * Authors:
- * Eric Marchand
- *
- *****************************************************************************/
+*****************************************************************************/
 
 #include <math.h>
 #include <visp3/core/vpGaussRand.h>
 
+BEGIN_VISP_NAMESPACE
 /*!
   Generate a normal random variable using the Box-Muller generator.
 
@@ -54,16 +52,18 @@ double vpGaussRand::gaussianDraw()
   }
 
   else {
+    const int val_2 = 2;
     double v1 = 0, v2 = 0, rsq = 0;
     do {
-      v1 = 2 * m_rng.uniform(0.0, 1.0) - 1;
-      v2 = 2 * m_rng.uniform(0.0, 1.0) - 1;
-      rsq = v1 * v1 + v2 * v2;
+      v1 = (val_2 * m_rng.uniform(0.0, 1.0)) - 1;
+      v2 = (val_2 * m_rng.uniform(0.0, 1.0)) - 1;
+      rsq = (v1 * v1) + (v2 * v2);
     } while (rsq >= 1);
 
-    double fac = sqrt(-2 * log(rsq) / rsq);
+    double fac = sqrt((-2 * log(rsq)) / rsq);
     m_x2 = v2 * fac;
     m_AlreadyDone = true;
     return v1 * fac;
   }
 }
+END_VISP_NAMESPACE

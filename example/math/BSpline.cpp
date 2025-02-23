@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -29,24 +29,22 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  * Description:
- * Exemple of a B-Spline curve.
+ * Example of a B-Spline curve.
  *
- * Authors:
- * Nicolas Melchior
- *
- *****************************************************************************/
-/*!
-  \file BSpline.cpp
+*****************************************************************************/
+ /*!
+   \file BSpline.cpp
 
-  \brief Describe a curve thanks to a BSpline.
-*/
+   \brief Describe a curve thanks to a BSpline.
+ */
 
-/*!
-  \example BSpline.cpp
+ /*!
+   \example BSpline.cpp
 
-  Describe a curve thanks to a BSpline.
-*/
+   Describe a curve thanks to a BSpline.
+ */
 
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpDebug.h>
 
 #include <visp3/core/vpBSpline.h>
@@ -56,11 +54,7 @@
 #include <visp3/core/vpImagePoint.h>
 #include <visp3/io/vpImageIo.h>
 #ifdef VISP_HAVE_MODULE_GUI
-#include <visp3/gui/vpDisplayD3D.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayGTK.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h> // Should be after #include <visp3/gui/vpDisplayOpenCV.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #endif
 
 #include <cstdlib>
@@ -68,11 +62,14 @@
 #include <visp3/core/vpIoTools.h>
 #include <visp3/io/vpParseArgv.h>
 
-#if defined(VISP_HAVE_X11) || defined(VISP_HAVE_GTK) || defined(VISP_HAVE_GDI) || defined(VISP_HAVE_OPENCV) ||         \
-    defined(VISP_HAVE_D3D9)
+#if defined(VISP_HAVE_DISPLAY)
 
-// List of allowed command line options
+ // List of allowed command line options
 #define GETOPTARGS "cdh"
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void usage(const char *name, const char *badparam);
 bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display);
@@ -97,8 +94,8 @@ SYNOPSIS\n\
   fprintf(stdout, "\n\
 OPTIONS:                                               Default\n\
   -c\n\
-     Disable the mouse click. Useful to automaze the \n\
-     execution of this program without humain intervention.\n\
+     Disable the mouse click. Useful to automate the \n\
+     execution of this program without human intervention.\n\
 \n\
   -d \n\
      Turn off the display.\n\
@@ -136,7 +133,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
       display = false;
       break;
     case 'h':
-      usage(argv[0], NULL);
+      usage(argv[0], nullptr);
       return false;
       break;
 
@@ -149,7 +146,7 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
   if ((c == 1) || (c == -1)) {
     // standalone param or error
-    usage(argv[0], NULL);
+    usage(argv[0], nullptr);
     std::cerr << "ERROR: " << std::endl;
     std::cerr << "  Bad argument " << optarg_ << std::endl << std::endl;
     return false;
@@ -160,6 +157,12 @@ bool getOptions(int argc, const char **argv, bool &click_allowed, bool &display)
 
 int main(int argc, const char **argv)
 {
+  // We declare the display variable to be able to free it in the catch block if needed.
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
   try {
     bool opt_click_allowed = true;
     bool opt_display = true;
@@ -175,27 +178,18 @@ int main(int argc, const char **argv)
     vpImage<unsigned char> I(540, 480);
 
     // We open a window using either X11, GTK or GDI.
-
-#ifdef VISP_HAVE_MODULE_GUI
-#if defined VISP_HAVE_X11
-    vpDisplayX display;
-#elif defined VISP_HAVE_GTK
-    vpDisplayGTK display;
-#elif defined VISP_HAVE_GDI
-    vpDisplayGDI display;
-#elif defined VISP_HAVE_OPENCV
-    vpDisplayOpenCV display;
-#elif defined VISP_HAVE_D3D9
-    vpDisplayD3D display;
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    display = vpDisplayFactory::createDisplay();
+#else
+    display = vpDisplayFactory::allocateDisplay();
 #endif
 
     if (opt_display) {
       // Display size is automatically defined by the image (I) size
-      display.init(I, 100, 100, "Display image");
+      display->init(I, 100, 100, "Display image");
       vpDisplay::display(I);
       vpDisplay::flush(I);
     }
-#endif
 
     vpBSpline bSpline;
     std::list<double> knots;
@@ -256,13 +250,13 @@ int main(int argc, const char **argv)
     unsigned int i = bSpline.findSpan(5 / 2.0);
     std::cout << "The knot interval number for the value u = 5/2 is : " << i << std::endl;
 
-    vpBasisFunction *N = NULL;
+    vpBasisFunction *N = nullptr;
     N = bSpline.computeBasisFuns(5 / 2.0);
     std::cout << "The nonvanishing basis functions N(u=5/2) are :" << std::endl;
     for (unsigned int j = 0; j < bSpline.get_p() + 1; j++)
       std::cout << N[j].value << std::endl;
 
-    vpBasisFunction **N2 = NULL;
+    vpBasisFunction **N2 = nullptr;
     N2 = bSpline.computeDersBasisFuns(5 / 2.0, 2);
     std::cout << "The first derivatives of the basis functions N'(u=5/2) are :" << std::endl;
     for (unsigned int j = 0; j < bSpline.get_p() + 1; j++)
@@ -286,27 +280,38 @@ int main(int argc, const char **argv)
       vpDisplay::getClick(I);
     }
 
-    if (N != NULL)
+    if (N != nullptr)
       delete[] N;
-    if (N2 != NULL) {
+    if (N2 != nullptr) {
       for (unsigned int j = 0; j <= 2; j++)
         delete[] N2[j];
       delete[] N2;
     }
 
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_SUCCESS;
-  } catch (const vpException &e) {
+    }
+  catch (const vpException &e) {
     std::cout << "Catch an exception: " << e << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
+    }
   }
-}
 
 #else
 int main()
 {
   std::cout
-      << "You do not have X11, GTK, or OpenCV, or GDI (Graphical Device Interface) functionalities to display images..."
-      << std::endl;
+    << "You do not have X11, GTK, or OpenCV, or GDI (Graphical Device Interface) functionalities to display images..."
+    << std::endl;
   std::cout << "Tip if you are on a unix-like system:" << std::endl;
   std::cout << "- Install X11, configure again ViSP using cmake and build again this example" << std::endl;
   std::cout << "Tip if you are on a windows-like system:" << std::endl;

@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  * ViSP, open source Visual Servoing Platform software.
- * Copyright (C) 2005 - 2022 by Inria. All rights reserved.
+ * Copyright (C) 2005 - 2023 by Inria. All rights reserved.
  *
  * This software is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * GPL, please contact Inria about acquiring a ViSP Professional
  * Edition License.
  *
- * See http://visp.inria.fr for more information.
+ * See https://visp.inria.fr for more information.
  *
  * This software was developed at:
  * Inria Rennes - Bretagne Atlantique
@@ -33,10 +33,7 @@
  *   eye-in-hand control
  *   velocity computed in the camera frame
  *
- * Authors:
- * Fabien Spindler
- *
- *****************************************************************************/
+*****************************************************************************/
 /*!
   \example servoFrankaIBVS.cpp
 
@@ -58,16 +55,16 @@
 
   The target is an AprilTag that is by default 12cm large. To print your own tag, see
   https://visp-doc.inria.fr/doxygen/visp-daily/tutorial-detection-apriltag.html
-  You can specify the size of your tag using --tag_size command line option.
+  You can specify the size of your tag using --tag-size command line option.
 
 */
 
 #include <iostream>
 
 #include <visp3/core/vpCameraParameters.h>
+#include <visp3/core/vpConfig.h>
 #include <visp3/detection/vpDetectorAprilTag.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/gui/vpPlot.h>
 #include <visp3/io/vpImageIo.h>
 #include <visp3/robot/vpRobotFranka.h>
@@ -77,8 +74,11 @@
 #include <visp3/vs/vpServo.h>
 #include <visp3/vs/vpServoDisplay.h>
 
-#if defined(VISP_HAVE_REALSENSE2) && (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11) &&                                    \
-    (defined(VISP_HAVE_X11) || defined(VISP_HAVE_GDI)) && defined(VISP_HAVE_FRANKA)
+#if defined(VISP_HAVE_REALSENSE2) && defined(VISP_HAVE_DISPLAY) && defined(VISP_HAVE_FRANKA)
+
+#ifdef ENABLE_VISP_NAMESPACE
+using namespace VISP_NAMESPACE_NAME;
+#endif
 
 void display_point_trajectory(const vpImage<unsigned char> &I, const std::vector<vpImagePoint> &vip,
                               std::vector<vpImagePoint> *traj_vip)
@@ -89,7 +89,8 @@ void display_point_trajectory(const vpImage<unsigned char> &I, const std::vector
       if (vpImagePoint::distance(vip[i], traj_vip[i].back()) > 1.) {
         traj_vip[i].push_back(vip[i]);
       }
-    } else {
+    }
+    else {
       traj_vip[i].push_back(vip[i]);
     }
   }
@@ -114,36 +115,100 @@ int main(int argc, char **argv)
   double convergence_threshold = 0.00005;
 
   for (int i = 1; i < argc; i++) {
-    if (std::string(argv[i]) == "--tag_size" && i + 1 < argc) {
+    if ((std::string(argv[i]) == "--tag-size") && (i + 1 < argc)) {
       opt_tagSize = std::stod(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--ip" && i + 1 < argc) {
+      ++i;
+    }
+    else if ((std::string(argv[i]) == "--ip") && (i + 1 < argc)) {
       opt_robot_ip = std::string(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--eMc" && i + 1 < argc) {
+      ++i;
+    }
+    else if ((std::string(argv[i]) == "--eMc") && (i + 1 < argc)) {
       opt_eMc_filename = std::string(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--verbose") {
+      ++i;
+    }
+    else if (std::string(argv[i]) == "--verbose") {
       opt_verbose = true;
-    } else if (std::string(argv[i]) == "--plot") {
+    }
+    else if (std::string(argv[i]) == "--plot") {
       opt_plot = true;
-    } else if (std::string(argv[i]) == "--adaptive_gain") {
+    }
+    else if (std::string(argv[i]) == "--adaptive-gain") {
       opt_adaptive_gain = true;
-    } else if (std::string(argv[i]) == "--task_sequencing") {
+    }
+    else if (std::string(argv[i]) == "--task-sequencing") {
       opt_task_sequencing = true;
-    } else if (std::string(argv[i]) == "--quad_decimate" && i + 1 < argc) {
+    }
+    else if ((std::string(argv[i]) == "--quad-decimate") && (i + 1 < argc)) {
       opt_quad_decimate = std::stoi(argv[i + 1]);
-    } else if (std::string(argv[i]) == "--no-convergence-threshold") {
+      ++i;
+    }
+    else if (std::string(argv[i]) == "--no-convergence-threshold") {
       convergence_threshold = 0.;
-    } else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
-      std::cout
-          << argv[0] << " [--ip <default " << opt_robot_ip << ">] [--tag_size <marker size in meter; default "
-          << opt_tagSize << ">] [--eMc <eMc extrinsic file>] "
-          << "[--quad_decimate <decimation; default " << opt_quad_decimate
-          << ">] [--adaptive_gain] [--plot] [--task_sequencing] [--no-convergence-threshold] [--verbose] [--help] [-h]"
-          << "\n";
+    }
+    else if ((std::string(argv[i]) == "--help") || (std::string(argv[i]) == "-h")) {
+      std::cout << "SYNOPSYS" << std::endl
+        << "  " << argv[0]
+        << " [--ip <controller ip>]"
+        << " [--tag-size <size>]"
+        << " [--eMc <extrinsic transformation file>]"
+        << " [--quad-decimate <decimation factor>]"
+        << " [--adaptive-gain]"
+        << " [--plot]"
+        << " [--task-sequencing]"
+        << " [--no-convergence-threshold]"
+        << " [--verbose]"
+        << " [--help] [-h]\n"
+        << std::endl;
+      std::cout << "DESCRIPTION" << std::endl
+        << "  Use an image-based visual-servoing scheme to position the camera in front of an Apriltag." << std::endl
+        << std::endl
+        << "  --ip <controller ip>" << std::endl
+        << "    Franka controller ip address" << std::endl
+        << "    Default: " << opt_robot_ip << std::endl
+        << std::endl
+        << "  --tag-size <size>" << std::endl
+        << "    Apriltag size in [m]." << std::endl
+        << "    Default: " << opt_tagSize << " [m]" << std::endl
+        << std::endl
+        << "  --eMc <extrinsic transformation file>" << std::endl
+        << "    File containing the homogeneous transformation matrix between" << std::endl
+        << "    robot end-effector and camera frame." << std::endl
+        << std::endl
+        << "  --quad-decimate <decimation factor>" << std::endl
+        << "    Decimation factor used during Apriltag detection." << std::endl
+        << "    Default: " << opt_quad_decimate << std::endl
+        << std::endl
+        << "  --adaptive-gain" << std::endl
+        << "    Flag to enable adaptive gain to speed up visual servo near convergence." << std::endl
+        << std::endl
+        << "  --plot" << std::endl
+        << "    Flag to enable curve plotter." << std::endl
+        << std::endl
+        << "  --task-sequencing" << std::endl
+        << "    Flag to enable task sequencing scheme." << std::endl
+        << std::endl
+        << "  --no-convergence-threshold" << std::endl
+        << "    Flag to disable convergence threshold used to stop the visual servo." << std::endl
+        << std::endl
+        << "  --verbose" << std::endl
+        << "    Flag to enable extra verbosity." << std::endl
+        << std::endl
+        << "  --help, -h" << std::endl
+        << "    Print this helper message." << std::endl
+        << std::endl;
+
       return EXIT_SUCCESS;
     }
   }
 
   vpRobotFranka robot;
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display;
+#else
+  vpDisplay *display = nullptr;
+#endif
 
   try {
     robot.connect(opt_robot_ip);
@@ -169,24 +234,23 @@ int main(int argc, char **argv)
     // If provided, read camera extrinsics from --eMc <file>
     if (!opt_eMc_filename.empty()) {
       ePc.loadYAML(opt_eMc_filename, ePc);
-    } else {
-      std::cout << "Warning, opt_eMc_filename is empty! Use hard coded values."
-                << "\n";
+    }
+    else {
+      std::cout << "Warning, opt_eMc_filename is empty! Use hard coded values." << std::endl;
     }
     vpHomogeneousMatrix eMc(ePc);
-    std::cout << "eMc:\n" << eMc << "\n";
+    std::cout << "eMc:\n" << eMc << std::endl;
 
     // Get camera intrinsics
-    vpCameraParameters cam =
-        rs.getCameraParameters(RS2_STREAM_COLOR, vpCameraParameters::perspectiveProjWithDistortion);
-    std::cout << "cam:\n" << cam << "\n";
+    vpCameraParameters cam = rs.getCameraParameters(RS2_STREAM_COLOR, vpCameraParameters::perspectiveProjWithDistortion);
+    std::cout << "cam:\n" << cam << std::endl;
 
     vpImage<unsigned char> I(height, width);
 
-#if defined(VISP_HAVE_X11)
-    vpDisplayX dc(I, 10, 10, "Color image");
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI dc(I, 10, 10, "Color image");
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+    std::shared_ptr<vpDisplay> display = vpDisplayFactory::createDisplay(I, 10, 10, "Color image");
+#else
+    vpDisplay *display = vpDisplayFactory::allocateDisplay(I, 10, 10, "Color image");
 #endif
 
     vpDetectorAprilTag::vpAprilTagFamily tagFamily = vpDetectorAprilTag::TAG_36h11;
@@ -202,7 +266,7 @@ int main(int argc, char **argv)
 
     // Desired pose used to compute the desired features
     vpHomogeneousMatrix cdMo(vpTranslationVector(0, 0, opt_tagSize * 3), // 3 times tag with along camera z axis
-                             vpRotationMatrix({1, 0, 0, 0, -1, 0, 0, 0, -1}));
+                             vpRotationMatrix({ 1, 0, 0, 0, -1, 0, 0, 0, -1 }));
 
     // Create visual features
     std::vector<vpFeaturePoint> p(4), pd(4); // We use 4 points
@@ -225,7 +289,8 @@ int main(int argc, char **argv)
     if (opt_adaptive_gain) {
       vpAdaptiveGain lambda(1.5, 0.4, 30); // lambda(0)=4, lambda(oo)=0.4 and lambda'(0)=30
       task.setLambda(lambda);
-    } else {
+    }
+    else {
       task.setLambda(0.5);
     }
 
@@ -298,7 +363,8 @@ int main(int argc, char **argv)
           }
           if (std::fabs(v_cdMc[0].getThetaUVector().getTheta()) < std::fabs(v_cdMc[1].getThetaUVector().getTheta())) {
             oMo = v_oMo[0];
-          } else {
+          }
+          else {
             std::cout << "Desired frame modified to avoid PI rotation of the camera" << std::endl;
             oMo = v_oMo[1]; // Introduce PI rotation
           }
@@ -337,7 +403,8 @@ int main(int argc, char **argv)
             t_init_servo = vpTime::measureTimeMs();
           }
           v_c = task.computeControlLaw((vpTime::measureTimeMs() - t_init_servo) / 1000.);
-        } else {
+        }
+        else {
           v_c = task.computeControlLaw();
         }
 
@@ -379,8 +446,7 @@ int main(int argc, char **argv)
 
         if (error < convergence_threshold) {
           has_converged = true;
-          std::cout << "Servo task has converged"
-                    << "\n";
+          std::cout << "Servo task has converged" << std::endl;
           vpDisplay::displayText(I, 100, 20, "Servo task has converged", vpColor::red);
         }
         if (first_time) {
@@ -448,21 +514,45 @@ int main(int argc, char **argv)
     if (traj_corners) {
       delete[] traj_corners;
     }
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "ViSP exception: " << e.what() << std::endl;
     std::cout << "Stop the robot " << std::endl;
     robot.setRobotState(vpRobot::STATE_STOP);
-    return EXIT_FAILURE;
-  } catch (const franka::NetworkException &e) {
-    std::cout << "Franka network exception: " << e.what() << std::endl;
-    std::cout << "Check if you are connected to the Franka robot"
-              << " or if you specified the right IP using --ip command line option set by default to 192.168.1.1. "
-              << std::endl;
-    return EXIT_FAILURE;
-  } catch (const std::exception &e) {
-    std::cout << "Franka exception: " << e.what() << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
     return EXIT_FAILURE;
   }
+  catch (const franka::NetworkException &e) {
+    std::cout << "Franka network exception: " << e.what() << std::endl;
+    std::cout << "Check if you are connected to the Franka robot"
+      << " or if you specified the right IP using --ip command line option set by default to 192.168.1.1. "
+      << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
+    return EXIT_FAILURE;
+  }
+  catch (const std::exception &e) {
+    std::cout << "Franka exception: " << e.what() << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+    if (display != nullptr) {
+      delete display;
+    }
+#endif
+    return EXIT_FAILURE;
+  }
+
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
+  }
+#endif
 
   return EXIT_SUCCESS;
 }
@@ -471,9 +561,6 @@ int main()
 {
 #if !defined(VISP_HAVE_REALSENSE2)
   std::cout << "Install librealsense-2.x" << std::endl;
-#endif
-#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
-  std::cout << "Build ViSP with c++11 or higher compiler flag (cmake -DUSE_CXX_STANDARD=11)." << std::endl;
 #endif
 #if !defined(VISP_HAVE_FRANKA)
   std::cout << "Install libfranka." << std::endl;

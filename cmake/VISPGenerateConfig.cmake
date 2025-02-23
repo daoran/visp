@@ -1,7 +1,7 @@
 #############################################################################
 #
 # ViSP, open source Visual Servoing Platform software.
-# Copyright (C) 2005 - 2019 by Inria. All rights reserved.
+# Copyright (C) 2005 - 2023 by Inria. All rights reserved.
 #
 # This software is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # GPL, please contact Inria about acquiring a ViSP Professional
 # Edition License.
 #
-# See http://visp.inria.fr for more information.
+# See https://visp.inria.fr for more information.
 #
 # This software was developed at:
 # Inria Rennes - Bretagne Atlantique
@@ -34,30 +34,12 @@
 #  Part 2/3: ${BIN_DIR}/unix-install/VISPConfig.cmake -> For use with "make install"
 #  Part 3/3: ${BIN_DIR}/win-install/VISPConfig.cmake  -> For use within binary installers/packages
 #
-# Authors:
-# Fabien Spindler
-#
 #############################################################################
-
-# Macro that returns the relative path to go from a child folder to the parent folder
-# input: path_to_child
-# output: path_to_parent, the relative path to go from path_to_child to parent
-# example: if input =lib/x86_64-linux-gnu, then output=../..
-macro(get_path_to_parent path_to_child path_to_parent)
-  set(${path_to_parent} "")
-  set(input_ "${path_to_child}")
-  while(input_)
-    if(input_)
-      set(${path_to_parent} "${${path_to_parent}}../")
-    endif()
-    get_filename_component(input_ "${input_}" PATH)
-  endwhile(input_)
-endmacro()
 
 # Here we determine the relative path from ./${VISP_LIB_INSTALL_PATH} to its parent folder
 # if VISP_LIB_INSTALL_PATH=lib, then VISP_INSTALL_LIBDIR_TO_PARENT=../
 # if VISP_LIB_INSTALL_PATH=lib/x86_64-linux-gnu, then VISP_INSTALL_LIBDIR_TO_PARENT=../..
-get_path_to_parent(${VISP_LIB_INSTALL_PATH} VISP_INSTALL_LIBDIR_TO_PARENT)
+vp_get_path_to_parent(${VISP_LIB_INSTALL_PATH} VISP_INSTALL_LIBDIR_TO_PARENT)
 
 #build list of modules available for the ViSP user
 set(VISP_LIB_COMPONENTS "")
@@ -102,11 +84,7 @@ endif()
 # -------------------------------------------------------------------------------------------
 
 # Export the library
-if (CMAKE_VERSION VERSION_LESS 3.0.0)
-  export(TARGETS ${VISPModules_TARGETS} FILE "${PROJECT_BINARY_DIR}/VISPModules.cmake")
-else()
-  export(EXPORT VISPModules FILE "${PROJECT_BINARY_DIR}/VISPModules.cmake")
-endif()
+export(EXPORT VISPModules FILE "${PROJECT_BINARY_DIR}/VISPModules.cmake")
 
 ## Update include dirs
 set(VISP_INCLUDE_DIRS_CONFIGCMAKE "${VISP_INCLUDE_DIR}")
@@ -115,6 +93,8 @@ foreach(m ${VISP_MODULES_BUILD})
     list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE "${VISP_MODULE_${m}_LOCATION}/include")
   endif()
   list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_INC_DEPS})
+  list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_SYSTEM_INC_DEPS})
+
 endforeach()
 vp_list_unique(VISP_INCLUDE_DIRS_CONFIGCMAKE)
 
@@ -144,6 +124,7 @@ if(UNIX)
   set(VISP_INCLUDE_DIRS_CONFIGCMAKE "\${VISP_INSTALL_PATH}/${VISP_INC_INSTALL_PATH}")
   foreach(m ${VISP_MODULES_BUILD})
     list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_INC_DEPS})
+    list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_SYSTEM_INC_DEPS})
   endforeach()
   vp_list_unique(VISP_INCLUDE_DIRS_CONFIGCMAKE)
 endif()
@@ -164,6 +145,7 @@ if(WIN32)
   set(VISP_INCLUDE_DIRS_CONFIGCMAKE "\${VISP_CONFIG_PATH}/${VISP_INC_INSTALL_PATH}")
   foreach(m ${VISP_MODULES_BUILD})
     list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_INC_DEPS})
+    list(APPEND VISP_INCLUDE_DIRS_CONFIGCMAKE ${VISP_MODULE_${m}_SYSTEM_INC_DEPS})
   endforeach()
   vp_list_unique(VISP_INCLUDE_DIRS_CONFIGCMAKE)
 

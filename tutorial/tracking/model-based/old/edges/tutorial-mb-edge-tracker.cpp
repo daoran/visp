@@ -1,8 +1,7 @@
 //! \example tutorial-mb-edge-tracker.cpp
+#include <visp3/core/vpConfig.h>
 #include <visp3/core/vpIoTools.h>
-#include <visp3/gui/vpDisplayGDI.h>
-#include <visp3/gui/vpDisplayOpenCV.h>
-#include <visp3/gui/vpDisplayX.h>
+#include <visp3/gui/vpDisplayFactory.h>
 #include <visp3/io/vpImageIo.h>
 //! [Include]
 #include <visp3/mbt/vpMbEdgeTracker.h>
@@ -11,15 +10,32 @@
 
 int main(int argc, char **argv)
 {
-#if defined(VISP_HAVE_OPENCV) && (VISP_HAVE_OPENCV_VERSION >= 0x020100)
+#if defined(VISP_HAVE_OPENCV) && defined(VISP_HAVE_DISPLAY)
+#ifdef ENABLE_VISP_NAMESPACE
+  using namespace VISP_NAMESPACE_NAME;
+#endif
+
+#if (VISP_CXX_STANDARD >= VISP_CXX_STANDARD_11)
+  std::shared_ptr<vpDisplay> display = vpDisplayFactory::createDisplay();
+#else
+  vpDisplay *display = vpDisplayFactory::allocateDisplay();
+#endif
   try {
     std::string videoname = "teabox.mp4";
 
-    for (int i = 0; i < argc; i++) {
-      if (std::string(argv[i]) == "--name")
-        videoname = std::string(argv[i + 1]);
+    for (int i = 1; i < argc; i++) {
+      if (std::string(argv[i]) == "--name" && i + 1 < argc) {
+        videoname = std::string(argv[++i]);
+      }
       else if (std::string(argv[i]) == "--help" || std::string(argv[i]) == "-h") {
-        std::cout << "\nUsage: " << argv[0] << " [--name <video name>] [--help] [-h]\n" << std::endl;
+        std::cout << "\nUsage: " << argv[0]
+          << " [--name <video name>]"
+          << " [--help,-h]\n" << std::endl;
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+        if (display != nullptr) {
+          delete display;
+        }
+#endif
         return EXIT_SUCCESS;
       }
     }
@@ -31,8 +47,8 @@ int main(int argc, char **argv)
 
     std::cout << "Video name: " << videoname << std::endl;
     std::cout << "Tracker requested config files: " << objectname << ".[init,"
-              << "xml,"
-              << "cao or wrl]" << std::endl;
+      << "xml,"
+      << "cao or wrl]" << std::endl;
     std::cout << "Tracker optional config files: " << objectname << ".[ppm]" << std::endl;
 
     //! [Image]
@@ -47,36 +63,28 @@ int main(int argc, char **argv)
     g.setFileName(videoname);
     g.open(I);
 
-#if defined(VISP_HAVE_X11)
-    vpDisplayX display;
-#elif defined(VISP_HAVE_GDI)
-    vpDisplayGDI display;
-#elif defined(VISP_HAVE_OPENCV)
-    vpDisplayOpenCV display;
-#else
-    std::cout << "No image viewer is available..." << std::endl;
-    return EXIT_FAILURE;
-#endif
-
-    display.init(I, 100, 100, "Model-based edge tracker");
+    display->init(I, 100, 100, "Model-based edge tracker");
 
     //! [Constructor]
     vpMbEdgeTracker tracker;
     //! [Constructor]
     bool usexml = false;
     //! [Load xml]
+#if defined(VISP_HAVE_PUGIXML)
     if (vpIoTools::checkFilename(objectname + ".xml")) {
       tracker.loadConfigFile(objectname + ".xml");
       usexml = true;
     }
-    //! [Load xml]
+#endif
+//! [Load xml]
     if (!usexml) {
       //! [Set parameters]
       vpMe me;
       me.setMaskSize(5);
       me.setMaskNumber(180);
       me.setRange(8);
-      me.setThreshold(10000);
+      me.setLikelihoodThresholdType(vpMe::NORMALIZED_THRESHOLD);
+      me.setThreshold(20);
       me.setMu1(0.5);
       me.setMu2(0.5);
       me.setSampleStep(4);
@@ -135,12 +143,18 @@ int main(int argc, char **argv)
         break;
     }
     vpDisplay::getClick(I);
-  } catch (const vpException &e) {
+  }
+  catch (const vpException &e) {
     std::cout << "Catch a ViSP exception: " << e << std::endl;
   }
 #ifdef VISP_HAVE_OGRE
   catch (Ogre::Exception &e) {
     std::cout << "Catch an Ogre exception: " << e.getDescription() << std::endl;
+  }
+#endif
+#if (VISP_CXX_STANDARD < VISP_CXX_STANDARD_11)
+  if (display != nullptr) {
+    delete display;
   }
 #endif
 #else
