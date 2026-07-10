@@ -46,7 +46,9 @@ ViSP 3.7.1 (current version)
     . [#1946] Joint position exceeds q_l1 threshold in secondaryTaskJointLimitAvoidance()
     . [#1947] Ogre3D examples are crashing due to a missing robot.mesh resource
     . [#1958] ROS 2 package include path issues
+    . [#1973] Configuring MBT using JSON files
     . [#1974] Unable to build with OpenCV 5.0.0 and 5.1.0
+    . [#1984] Link issue when libfranka needs pinocchio
 ----------------------------------------------
 ViSP 3.7.0 (released December 19, 2025)
   - Contributors:
