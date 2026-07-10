@@ -283,6 +283,7 @@ int main(int argc, const char *argv[])
         << " config file is correct..." << "\n";
       return EXIT_FAILURE;
     }
+    std::cout << "Image size: " << I.getWidth() << " x " << I.getHeight() << std::endl;
 
     std::shared_ptr<vpDisplay> d = vpDisplayFactory::createDisplay(I, -1, -1, "", vpDisplay::SCALE_AUTO);
 
