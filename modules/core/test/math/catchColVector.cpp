@@ -251,7 +251,10 @@ TEST_CASE("vpColVector conversion and scalar comparison", "[vpColVector]")
 int main(int argc, char *argv[])
 {
   Catch::Session session;
-  return session.run(argc, argv);
+  session.applyCommandLine(argc, argv);
+  int numFailed = session.run();
+  std::cout << (numFailed ? "Test failed" : "Test succeed") << std::endl;
+  return numFailed;
 }
 #else
 int main() { return EXIT_SUCCESS; }
