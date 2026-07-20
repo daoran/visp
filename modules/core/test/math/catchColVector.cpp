@@ -123,7 +123,8 @@ TEST_CASE("vpColVector constructors and assignment", "[vpColVector]")
   for (unsigned int i = 0; i < M.getRows(); i++) { M[i][0] = i; bench[i] = i; }
 
   checkData(vpColVector(M), bench);
-  vpColVector v = M;
+  vpColVector v;
+  v = M;
   checkData(v, bench);
   vpColVector w(M);
   checkData(w, bench);
