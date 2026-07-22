@@ -49,6 +49,9 @@ ViSP 3.7.1 (current version)
     . [#1973] Configuring MBT using JSON files
     . [#1974] Unable to build with OpenCV 5.0.0 and 5.1.0
     . [#1984] Link issue when libfranka needs pinocchio
+    . [#1992] Valgrind: uninitialised value in vpMeLine::getExtremities() when moving-edges list is empty
+              (front()/back() on empty std::list)
+
 ----------------------------------------------
 ViSP 3.7.0 (released December 19, 2025)
   - Contributors:

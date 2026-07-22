@@ -338,7 +338,7 @@ if not import_failed:
                   is_static = False if method_def.static == 'no' else True
 
                   removed_macros_return = [
-                    'VP_DEPRECATED', 'VISP_EXPORT', 'VP_NORETURN', 'BEGIN_VISP_NAMESPACE', 'END_VISP_NAMESPACE'
+                    'VP_DEPRECATED', 'VISP_EXPORT', 'VP_NORETURN', 'BEGIN_VISP_NAMESPACE', 'END_VISP_NAMESPACE', 'VP_NODISCARD'
                   ]
                   ret_type = ''.join(process_mixed_container(c, 0, escape_rst=False) for c in method_def.type_.content_)
                   for macro in removed_macros_return:
