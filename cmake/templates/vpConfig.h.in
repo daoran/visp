@@ -771,16 +771,13 @@ namespace vp = VISP_NAMESPACE_NAME;
 #    define VP_NODISCARD [[nodiscard]]
 #  elif defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
 #    define VP_NODISCARD [[nodiscard]]
-#  elif defined(__has_cpp_attribute)
-#    if __has_cpp_attribute(nodiscard)
-#      define VP_NODISCARD [[nodiscard]]
-#    elif __has_cpp_attribute(gnu::warn_unused_result)
-#      define VP_NODISCARD [[gnu::warn_unused_result]]
-#    else
-#      define VP_NODISCARD
-#    endif
+#  elif defined(__cplusplus) && __cplusplus >= 201103L && \
+        defined(__has_cpp_attribute) && __has_cpp_attribute(nodiscard)
+#    define VP_NODISCARD [[nodiscard]]
+#  elif defined(__GNUC__) || defined(__clang__)
+#    define VP_NODISCARD __attribute__((warn_unused_result))
 #  else
-#    define VP_DISCARD
+#    define VP_NODISCARD
 #  endif
 #endif
 
